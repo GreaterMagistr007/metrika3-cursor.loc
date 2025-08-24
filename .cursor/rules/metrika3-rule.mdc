@@ -1,0 +1,142 @@
+---
+description: mtrika3-rule
+globs:
+alwaysApply: false
+---
+  You are an expert in Laravel, Vue.js, and modern full-stack web development technologies.
+
+  Key Principles
+  - Write concise, technical responses with accurate examples in PHP and Vue.js.
+  - Follow Laravel and Vue.js best practices and conventions.
+  - Use object-oriented programming with a focus on SOLID principles.
+  - Favor iteration and modularization over duplication.
+  - Use descriptive and meaningful names for variables, methods, and files.
+  - Adhere to Laravel's directory structure conventions (e.g., app/Http/Controllers).
+  - Prioritize dependency injection and service containers.
+  
+
+  PHP/Laravel
+  - Use PHP 8.3+ features when appropriate (e.g., typed properties, match expressions).
+  - Follow PSR-12 coding standards.
+  - Use strict typing: `declare(strict_types=1);`
+  - Utilize Laravel 12's built-in features and helpers when possible.
+  - Implement proper error handling and logging:
+      - Use Laravel's exception handling and logging features.
+      - Create custom exceptions when necessary.
+      - Use try-catch blocks for expected exceptions.
+  - Use Laravel's validation features for form and request validation.
+  - Implement middleware for request filtering and modification.
+  - Utilize Laravel's Eloquent ORM for database interactions.
+  - Use Laravel's query builder for complex database queries.
+  - Implement proper database migrations and seeders.  
+  - Используй swagger для документирования всех API.
+  
+    Vue.js
+  - Utilize Vite for modern and fast development with hot module reloading.
+  - Organize components under src/components and use lazy loading for routes.
+  - Apply Vue Router for SPA navigation and dynamic routing.
+  - Implement Pinia for state management in a modular way.
+  - Validate forms using Vuelidate and enhance UI with PrimeVue components.
+  
+  
+    Dependencies
+  - Laravel (latest stable version)
+  - Composer for dependency management
+  - TailwindCSS for styling and responsive design
+  - Vite for asset bundling and Vue integration
+  
+  Laravel Best Practices
+  - Use Eloquent ORM and Query Builder over raw SQL queries when possible
+  - Implement Repository and Service patterns for better code organization and reusability
+  - Utilize Laravel's built-in authentication and authorization features (Sanctum, Policies, or other)
+  - Leverage Laravel's caching mechanisms for improved performance
+  - Use job queues and Laravel Horizon for handling long-running tasks and background processing
+  - Implement comprehensive testing using PHPUnit and Laravel Dusk for unit, feature, and browser tests
+  - Use API resources and versioning for building robust and maintainable APIs
+  - Implement proper error handling and logging using Laravel's exception handler and logging facade
+  - Utilize Laravel's validation features, including Form Requests, for data integrity
+  - Implement database indexing and use Laravel's query optimization features for better performance
+  - Use Laravel Telescope for debugging and performance monitoring in development
+  - Implement proper security measures, including CSRF protection, XSS prevention, and input sanitization
+  
+    Code Architecture
+    * Naming Conventions:
+      - Use consistent naming conventions for folders, classes, and files.
+      - Follow Laravel's conventions: singular for models, plural for controllers (e.g., User.php, UsersController.php).
+      - Use PascalCase for class names, camelCase for method names, and snake_case for database columns.
+    * Controller Design:
+      - Controllers should be final classes to prevent inheritance.
+      - Make controllers read-only (i.e., no property mutations).
+      - Avoid injecting dependencies directly into controllers. Instead, use method injection or service classes.
+    * Model Design:
+      - Models should be final classes to ensure data integrity and prevent unexpected behavior from inheritance.
+    * Services:
+      - Create a Services folder within the app directory.
+      - Organize services into model-specific services and other required services.
+      - Service classes should be final and read-only.
+      - Use services for complex business logic, keeping controllers thin.
+    * Routing:
+      - Maintain consistent and organized routes.
+      - Create separate route files for each major model or feature area.
+      - Group related routes together (e.g., all user-related routes in routes/user.php).
+    * Type Declarations:
+      - Always use explicit return type declarations for methods and functions.
+      - Use appropriate PHP type hints for method parameters.
+      - Leverage PHP 8.3+ features like union types and nullable types when necessary.
+    * Data Type Consistency:
+      - Be consistent and explicit with data type declarations throughout the codebase.
+      - Use type hints for properties, method parameters, and return types.
+      - Leverage PHP's strict typing to catch type-related errors early.
+    * Error Handling:
+      - Use Laravel's exception handling and logging features to handle exceptions.
+      - Create custom exceptions when necessary.
+      - Use try-catch blocks for expected exceptions.
+      - Handle exceptions gracefully and return appropriate responses.
+	  
+	  Key points
+	- Follow Laravel’s MVC architecture for clear separation of business logic, data, and presentation layers.
+	- Implement request validation using Form Requests to ensure secure and validated data inputs.
+	- Use Laravel’s built-in authentication system, including Laravel Sanctum for API token management.
+	- Ensure the REST API follows Laravel standards, using API Resources for structured and consistent responses.
+	- Leverage task scheduling and event listeners to automate recurring tasks and decouple logic.
+	- Implement database transactions using Laravel's database facade to ensure data consistency.
+	- Use Eloquent ORM for database interactions, enforcing relationships and optimizing queries.
+	- Implement API versioning for maintainability and backward compatibility.
+	- Optimize performance with caching mechanisms.
+	- Ensure robust error handling and logging using Laravel’s exception handler and logging features.
+  
+  
+    Key Conventions
+  1. Follow Laravel's MVC architecture.
+  2. Use routing for clean URL and endpoint definitions.
+  3. Implement request validation with Form Requests.
+  4. Build reusable Vue components and modular state management.
+  5. Use Laravel's Blade engine or API resources for efficient views.
+  6. Manage database relationships using Eloquent's features.
+  7. Ensure code decoupling with Laravel's events and listeners.
+  8. Implement job queues and background tasks for better scalability.
+  9. Use Laravel's built-in scheduling for recurring processes.
+  10. Employ Laravel Mix or Vite for asset optimization and bundling.
+
+
+
+
+Общее описание приложения:
+Мы создаем веб-приложение Личный кабинет для управления и анализа работы вендинговых кофейных аппаратов.
+Приложение может работать как из браузера, так и как telegram mini-app.
+
+Пользовательское взаимодействие:
+Обязательная авторизация с длительным хранением состояния авторизированного пользователя.
+Пользователь обязан указать номер телефона при регистрации.
+Авторизация:
+Если пользователь авторизуется через браузер, то нужно ввести номер телефона и код, который отправит ему бот.
+Если в нашей базе нет пользователя с таким номером телефона, то нужно указать инструкцию, какому боту написать, чтоб зарегистрироваться.
+Если пользователь открывает приложение в телеграм, то происходит автоматическая авторизация по его идентификатору в телеграм - пользователь не должен ничего вводить лишнего.
+Если пользователь пытается авторизоваться в телеграм, и у него нет номера телефона в нашей базе данных, то обязательно нужно, чтоб пользователь ввел свой номер телефона.
+Номер телефона - основной элемент для связки пользователя (id в телеграм - номер телефона).
+Структура:
+В приложении есть кабинеты.
+В одном кабинете может быть один или несколько пользователей с разными ролями
+Если у пользователя нет кабинета, он может создать его.
+Владелец кабинета может добавить других пользователей, вписав их номера телефонов или отправив им пригласительную ссылку в телеграм.
+Владелец кабинета может назначать роли и права внутри кабинета пользователям этого кабинета.
