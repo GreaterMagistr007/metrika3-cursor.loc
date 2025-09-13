@@ -34,35 +34,35 @@
       <aside v-if="isAuthenticated" class="admin-panel-sidebar w-64 min-h-screen">
         <nav class="mt-5 px-2">
           <router-link 
-            to="/admin" 
+            to="/" 
             class="admin-nav-item"
             :class="{ 'active': $route.name === 'admin-dashboard' }"
           >
             Дашборд
           </router-link>
           <router-link 
-            to="/admin/users" 
+            to="/users" 
             class="admin-nav-item"
             :class="{ 'active': $route.name === 'admin-users' }"
           >
             Пользователи
           </router-link>
           <router-link 
-            to="/admin/cabinets" 
+            to="/cabinets" 
             class="admin-nav-item"
             :class="{ 'active': $route.name === 'admin-cabinets' }"
           >
             Кабинеты
           </router-link>
           <router-link 
-            to="/admin/audit-logs" 
+            to="/audit-logs" 
             class="admin-nav-item"
             :class="{ 'active': $route.name === 'admin-audit-logs' }"
           >
             Логи аудита
           </router-link>
           <router-link 
-            to="/admin/messages" 
+            to="/messages" 
             class="admin-nav-item"
             :class="{ 'active': $route.name === 'admin-messages' }"
           >
@@ -88,19 +88,27 @@ const admin = ref(null);
 const isAuthenticated = ref(false);
 
 const goToLogin = () => {
-  router.push('/admin/login');
+  router.push('/login');
 };
 
 const logout = () => {
   // TODO: Реализовать logout
   admin.value = null;
   isAuthenticated.value = false;
-  router.push('/admin/login');
+  router.push('/login');
 };
 
 onMounted(() => {
   // TODO: Проверить аутентификацию
-  // Пока что для демонстрации
+  // Пока что для демонстрации - показываем форму входа
   isAuthenticated.value = false;
+  
+  console.log('AdminPanel mounted, current route:', router.currentRoute.value);
+  
+  // Если не авторизован и не на странице входа, перенаправляем на страницу входа
+  if (!isAuthenticated.value && router.currentRoute.value.name !== 'admin-login') {
+    console.log('Redirecting to login');
+    router.push('/login');
+  }
 });
 </script>

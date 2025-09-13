@@ -14,16 +14,16 @@ import AdminLogin from './components/admin/Login.vue';
 
 // Настройка роутера
 const routes = [
-    { path: '/admin', name: 'admin-dashboard', component: AdminDashboard },
-    { path: '/admin/users', name: 'admin-users', component: UsersManagement },
-    { path: '/admin/cabinets', name: 'admin-cabinets', component: CabinetsManagement },
-    { path: '/admin/audit-logs', name: 'admin-audit-logs', component: AuditLogs },
-    { path: '/admin/messages', name: 'admin-messages', component: MessagesManagement },
-    { path: '/admin/login', name: 'admin-login', component: AdminLogin },
+    { path: '/', name: 'admin-dashboard', component: AdminDashboard },
+    { path: '/users', name: 'admin-users', component: UsersManagement },
+    { path: '/cabinets', name: 'admin-cabinets', component: CabinetsManagement },
+    { path: '/audit-logs', name: 'admin-audit-logs', component: AuditLogs },
+    { path: '/messages', name: 'admin-messages', component: MessagesManagement },
+    { path: '/login', name: 'admin-login', component: AdminLogin },
 ];
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory('/admin'),
     routes,
 });
 

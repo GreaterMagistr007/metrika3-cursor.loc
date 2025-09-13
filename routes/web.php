@@ -2,16 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Основное приложение
-Route::get('/', function () {
-    return view('main-app');
-});
-
-Route::get('/{any}', function () {
-    return view('main-app');
-})->where('any', '.*');
-
-// Админ-панель
+// Админ-панель (должна быть ПЕРЕД основным приложением)
 Route::prefix('admin')->group(function () {
     Route::get('/', function () {
         return view('admin-panel');
@@ -21,3 +12,12 @@ Route::prefix('admin')->group(function () {
         return view('admin-panel');
     })->where('any', '.*');
 });
+
+// Основное приложение
+Route::get('/', function () {
+    return view('main-app');
+});
+
+Route::get('/{any}', function () {
+    return view('main-app');
+})->where('any', '.*');
