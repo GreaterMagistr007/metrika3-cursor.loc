@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\InviteUserRequest;
 use App\Http\Resources\CabinetUserResource;
 use App\Models\Cabinet;
 use App\Models\User;
@@ -22,7 +23,7 @@ final class CabinetUserController extends Controller
     /**
      * Invite user to cabinet.
      */
-    public function invite(Request $request, Cabinet $cabinet): JsonResponse
+    public function invite(InviteUserRequest $request, Cabinet $cabinet): JsonResponse
     {
         try {
             $user = $request->user();
@@ -35,15 +36,10 @@ final class CabinetUserController extends Controller
                 ], 403);
             }
 
-            $request->validate([
-                'phone' => 'required|string|regex:/^\+[1-9]\d{1,14}$/',
-                'role' => 'nullable|string|in:admin,manager,operator',
-            ]);
-
             $inviteResult = $this->cabinetService->inviteUserToCabinet(
                 $cabinet,
-                $request->input('phone'),
-                $request->input('role', 'operator')
+                $request->validated()['phone'],
+                $request->validated()['role']
             );
 
             if ($inviteResult['success']) {

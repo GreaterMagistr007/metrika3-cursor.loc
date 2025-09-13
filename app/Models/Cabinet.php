@@ -58,6 +58,14 @@ final class Cabinet extends Model
     }
 
     /**
+     * Get the cabinet user records.
+     */
+    public function cabinetUsers(): HasMany
+    {
+        return $this->hasMany(CabinetUser::class);
+    }
+
+    /**
      * Get the audit logs for the cabinet.
      */
     public function auditLogs(): HasMany

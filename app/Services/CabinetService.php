@@ -153,7 +153,9 @@ final class CabinetService
             }
 
             // Check if new owner is already in cabinet
-            $cabinetUser = $cabinet->users()->where('user_id', $newOwner->id)->first();
+            $cabinetUser = CabinetUser::where('cabinet_id', $cabinet->id)
+                ->where('user_id', $newOwner->id)
+                ->first();
             if (!$cabinetUser) {
                 return [
                     'success' => false,
@@ -170,7 +172,9 @@ final class CabinetService
 
                 // Update cabinet user records
                 // Remove owner flag from old owner
-                $oldOwnerCabinetUser = $cabinet->users()->where('user_id', $oldOwner->id)->first();
+                $oldOwnerCabinetUser = CabinetUser::where('cabinet_id', $cabinet->id)
+                    ->where('user_id', $oldOwner->id)
+                    ->first();
                 if ($oldOwnerCabinetUser) {
                     $oldOwnerCabinetUser->update(['is_owner' => false]);
                 }

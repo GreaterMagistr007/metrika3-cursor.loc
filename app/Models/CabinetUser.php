@@ -104,6 +104,6 @@ final class CabinetUser extends Model
      */
     public function isOwner(): bool
     {
-        return $this->role === 'owner';
+        return $this->is_owner;
     }
 }

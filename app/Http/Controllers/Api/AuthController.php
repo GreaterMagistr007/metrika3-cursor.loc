@@ -90,8 +90,11 @@ final class AuthController extends Controller
                 ], 404);
             }
 
-            // Update last login
-            $user->update(['last_login_at' => now()]);
+            // Update last login and phone verification
+            $user->update([
+                'last_login_at' => now(),
+                'phone_verified_at' => now()
+            ]);
 
             // Create token
             $token = $user->createToken('auth-token')->plainTextToken;

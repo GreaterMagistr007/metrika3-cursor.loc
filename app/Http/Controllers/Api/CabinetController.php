@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\CabinetRequest;
 use App\Http\Resources\CabinetResource;
 use App\Http\Resources\CabinetUserResource;
 use App\Models\Cabinet;
@@ -50,19 +51,14 @@ final class CabinetController extends Controller
     /**
      * Create a new cabinet.
      */
-    public function store(Request $request): JsonResponse
+    public function store(CabinetRequest $request): JsonResponse
     {
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-            ]);
-
             $user = $request->user();
             $cabinet = $this->cabinetService->createCabinet(
                 $user,
-                $request->input('name'),
-                $request->input('description')
+                $request->validated()['name'],
+                $request->validated()['description'] ?? null
             );
 
             return response()->json([
@@ -99,11 +95,14 @@ final class CabinetController extends Controller
                 ], 403);
             }
 
-            $cabinet->load('owner', 'users.user', 'users.permissions');
+            $cabinet->load('owner');
+            $cabinet->load(['cabinetUsers' => function ($query) {
+                $query->with(['user', 'permissions']);
+            }]);
 
             return response()->json([
                 'cabinet' => new CabinetResource($cabinet),
-                'users' => CabinetUserResource::collection($cabinet->users)
+                'users' => CabinetUserResource::collection($cabinet->cabinetUsers)
             ]);
 
         } catch (\Exception $e) {
@@ -123,7 +122,7 @@ final class CabinetController extends Controller
     /**
      * Update cabinet.
      */
-    public function update(Request $request, Cabinet $cabinet): JsonResponse
+    public function update(CabinetRequest $request, Cabinet $cabinet): JsonResponse
     {
         try {
             $user = $request->user();
@@ -136,14 +135,9 @@ final class CabinetController extends Controller
                 ], 403);
             }
 
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-            ]);
-
             $cabinet->update([
-                'name' => $request->input('name'),
-                'description' => $request->input('description'),
+                'name' => $request->validated()['name'],
+                'description' => $request->validated()['description'] ?? null,
             ]);
 
             return response()->json([

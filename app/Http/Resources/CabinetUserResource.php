@@ -21,15 +21,17 @@ final class CabinetUserResource extends JsonResource
             'role' => $this->role,
             'is_owner' => $this->is_owner,
             'joined_at' => $this->created_at,
-            'user' => new UserResource($this->whenLoaded('user')),
-            'permissions' => $this->whenLoaded('permissions', function () {
+            'user' => $this->when($this->user, function () {
+                return new UserResource($this->user);
+            }),
+            'permissions' => $this->when($this->permissions, function () {
                 return $this->permissions->map(function ($permission) {
-                return [
-                    'id' => $permission->id,
-                    'name' => $permission->name,
-                    'description' => $permission->description,
-                    'category' => $permission->category,
-                ];
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'description' => $permission->description,
+                        'category' => $permission->category,
+                    ];
                 });
             }),
         ];
