@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+/* Стили для панели администратора */
+.admin-panel {
+    @apply min-h-screen bg-gray-100;
+}
+
+.admin-panel-header {
+    @apply bg-white shadow-sm border-b border-gray-200;
+}
+
+.admin-panel-sidebar {
+    @apply bg-gray-800 text-white shadow-lg;
+}
+
+.admin-panel-content {
+    @apply flex-1 p-6 bg-gray-50;
+}
+
+.admin-nav-item {
+    @apply block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors;
+}
+
+.admin-nav-item.active {
+    @apply bg-gray-700 text-white;
+}
