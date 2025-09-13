@@ -1,0 +1,256 @@
+Пошаговый план разработки "Личный кабинет для управления вендинговыми аппаратами" (Фаза 1)
+ШАГ 0: Подготовка окружения и инициализация проекта
+
+0.1. Установка и настройка серверного окружения: PHP 8.4+, Composer, Node.js 20+, MariaDB, Redis.
+
+0.2. Инициализация бэкенд-проекта на Laravel 12.
+
+composer create-project laravel/laravel vending-cabinet-backend
+
+Настройка .env файла (база данных, redis, app key, app env).
+
+0.3. Инициализация двух фронтенд-проектов на Vue 3 + Vite (монорепозиторий).
+
+npm create vue@latest -> ./frontend/main-app
+
+npm create vue@latest -> ./frontend/admin-panel
+
+Настройка package.json в корне фронтенда для управления двумя приложениями (скрипты dev:main, dev:admin, build:main, build:admin).
+
+0.4. Установка и настройка дополнительных пакетов.
+
+Бэкенд:
+
+composer require laravel/sanctum (для API-аутентификации)
+
+composer require darkaonline/l5-swagger (для Swagger-документации)
+
+composer require guzzlehttp/guzzle (для запросов к Telegram API)
+
+Фронтенд (оба приложения):
+
+npm install axios pinia vue-router @headlessui/vue tailwindcss postcss autoprefixer
+
+npx tailwindcss init -p
+
+ШАГ 1: Проектирование БД и создание миграций
+
+1.1. Создание миграций для всех сущностей на основе ТЗ и уточнений:
+
+users (id, phone, telegram_id, telegram_data JSON, ...)
+
+cabinets (id, name, owner_id, ...)
+
+cabinet_user (cabinet_id, user_id, ...)
+
+permissions (id, name, description) - Сидер из Приложения А ТЗ.
+
+cabinet_user_permission (cabinet_user_id, permission_id)
+
+audit_logs - Структура из Приложения В ТЗ.
+
+messages (id, type, text, url, button_text, button_url, is_active, trigger_field, trigger_value, ...)
+
+message_recipients (id, message_id, recipient_type['user','cabinet','all'], recipient_id NULL)
+
+user_messages (id, user_id, message_id, is_read, read_at)
+
+admin_users (id, phone, telegram_id, ...) - Отдельная таблица для админов.
+
+1.2. Написание сидеров:
+
+PermissionsTableSeeder - заполняет права из Приложения А ТЗ.
+
+AdminUsersTableSeeder - создает первого супер-администратора (его телефон нужно задать в .env).
+
+1.3. Запуск миграций и сидов: php artisan migrate --seed
+
+ШАГ 2: Разработка ядра системы (Модели, Relationships)
+
+2.1. Создание Eloquent моделей (final классы, strict typing) для всех таблиц.
+
+2.2. Реализация отношений между моделями:
+
+User: belongsToMany(Cabinet::class), hasMany(AuditLog::class), belongsToMany(Permission::class) через cabinet_user
+
+Cabinet: belongsTo(User::class, 'owner_id'), belongsToMany(User::class), hasMany(AuditLog::class)
+
+Message: hasMany(MessageRecipient::class), belongsToMany(User::class)->withPivot('is_read')
+
+2.3. Создание трейтов:
+
+HasPermissionsTrait с методами hasPermissionTo(), assignPermission() для моделей User и CabinetUser (Pivot).
+
+AuditableTrait с методом logAuditEvent($event, $description, $meta = null) для автоматического логирования действий моделей.
+
+ШАГ 3: Реализация модуля аутентификации и авторизации (Backend)
+
+3.1. Настройка Laravel Sanctum: публикация конфигов, миграций (php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"), настройка middleware auth:sanctum.
+
+3.2. Создание контроллеров и роутов (routes/api.php):
+
+POST /api/auth/request-otp
+
+Валидация номера телефона.
+
+Генерация кода, сохранение в кеш (Redis) с ключом auth_otp:<phone> и TTL 5 минут.
+
+Отправка кода через Telegram Bot API метод sendMessage.
+
+POST /api/auth/verify-otp
+
+Валидация номера и кода.
+
+Проверка кода из кеша.
+
+Поиск или создание пользователя по номеру телефона.
+
+Создание токена Sanctum ($user->createToken('auth-token')).
+
+Возврат токена и данных пользователя.
+
+POST /api/auth/telegram
+
+Валидация initData от Telegram.
+
+Парсинг initData и извлечение user данных.
+
+Поиск пользователя по telegram_id или привязка к существующему по номеру телефона.
+
+Создание/возврат токена Sanctum.
+
+POST /api/auth/logout: Удаление текущего токена.
+
+3.3. Создание Middleware для проверки прав доступа (например, CheckCabinetPermission), который будет проверять право пользователя (например, settings.view) для текущего кабинета (id кабинета может передаваться в заголовке X-Cabinet-Id или в теле запроса).
+
+ШАГ 4: Реализация модуля аутентификации (Frontend - Main App)
+
+4.1. Создание Pinia-стора useAuthStore:
+
+Состояние: user, token, isAuthenticated, currentCabinet.
+
+Действия: loginWithPhone, verifyOtp, loginWithTelegram, logout, fetchUser.
+
+4.2. Настройка Axios-интерцепторов:
+
+Запрос: автоматическое добавление заголовка Authorization: Bearer ${token} (токен из localStorage).
+
+Ответ: перехват ошибки 401 (Unauthorized) для автоматического логаута.
+
+4.3. Создание компонента LoginForm.vue с логикой:
+
+Определение контекста (браузер или TMA) через window.Telegram.WebApp.
+
+В TMA: автоматический вызов loginWithTelegram с initData.
+
+В браузере: отображение формы ввода телефона -> запрос OTP -> форма ввода кода -> верификация.
+
+4.4. Настройка Vue Router: добавление навигационного хуука для проверки аутентификации на защищенных маршрутах.
+
+ШАГ 5: Модуль управления кабинетами и пользователями (Backend)
+
+5.1. Создание API-ресурсов (Eloquent Resources) для Cabinet и User.
+
+5.2. Эндпоинты (api/cabinets/..., api/cabinet-users/...):
+
+GET /cabinets - Список кабинетов пользователя.
+
+POST /cabinets - Создание кабинета (с автоматическим назначением прав владельца).
+
+POST /cabinets/{cabinet}/invite - Приглашение пользователя по номеру/ссылке. Логирование действия.
+
+DELETE /cabinets/{cabinet}/users/{user} - Удаление пользователя из кабинета.
+
+PATCH /cabinets/{cabinet}/transfer-ownership - Передача прав владения (SQL из Приложения Б ТЗ).
+
+5.3. Реализация сервисного слоя для инвайтов: генерация ссылки, отправка приглашения.
+
+ШАГ 6: Гибкая система ролей и прав (Backend)
+
+6.1. Реализация в контроллерах проверки прав через Middleware (см. п.3.3).
+
+Пример: $request->user()->hasPermissionTo('user.invite', $cabinet).
+
+6.2. Эндпоинты для управления правами:
+
+GET /cabinet-users/{user}/permissions - Получить права пользователя в кабинете.
+
+POST /cabinet-users/{user}/permissions - Назначить права.
+
+6.3. Кеширование прав пользователя: при запросе прав, сначала проверка кеша по ключу user_permissions:<user_id>:<cabinet_id>, если нет — запрос к БД и сохранение в кеш.
+
+ШАГ 7: Модуль аудит-логирования (Backend)
+
+7.1. Создание модели и репозитория AuditLogRepository с методом log($data).
+
+7.2. Регистрация слушателей событий (Events/Listeners) для ключевых действий (например, UserInvited, PermissionAssigned).
+
+7.3. В слушателях — помещение задания (Job) в очередь для асинхронной записи лога через AuditLogRepository::log().
+
+7.4. Создание эндпоинта для панели администратора: GET /admin/audit-logs с фильтрацией и пагинацией.
+
+ШАГ 8: Система сообщений и уведомлений (Backend)
+
+8.1. Создание Middleware SystemMessagesMiddleware.
+
+После обработки запроса, для аутентифицированного пользователя, проверить наличие непрочитанных Persistent/Broadcast сообщений.
+
+Добавить их в заголовок ответа X-System-Messages.
+
+8.2. Создание контроллера и эндпоинтов для маркировки сообщений как прочитанных (POST /messages/{message}/read).
+
+8.3. Реализация админских эндпоинтов (POST /admin/messages) для создания/управления сообщениями.
+
+ШАГ 9: Панель администратора (Backend)
+
+9.1. Создание отдельного файла роутов routes/admin.php с префиксом admin/api и middleware (проверка admin_users).
+
+9.2. Реализация аутентификации для админов (аналогично основной, но с использованием таблицы admin_users).
+
+9.3. Создание Resource-контроллеров для управления пользователями, кабинетами, просмотра логов.
+
+ШАГ 10: Фронтенд - Main App (Базовый каркас и интеграция)
+
+10.1. Создание Main Layout с навигацией.
+
+10.2. Реализация переключения между кабинетами (если пользователь в нескольких).
+
+10.3. Раздел "Дашборд": статичная страница с приветствием.
+
+10.4. Раздел "Настройки":
+
+Подраздел "Пользователи и права": таблица пользователей, модальные окна для приглашения и управления правами.
+
+10.5. Реализация интерцептора для System Messages:
+
+Перехват ответа axios, проверка заголовка X-System-Messages.
+
+Отображение сообщения с помощью Toast-уведомления (для Toast) или сохранение в Pinia-стор useMessageStore для отображения в "Центре уведомлений" (для Persistent/Broadcast).
+
+ШАГ 11: Фронтенд - Admin Panel
+
+11.1. Создание отдельного приложения с своим роутером и layout.
+
+11.2. Реализация логики аутентификации (аналогично основной, но с запросами к /admin/api/auth/...).
+
+11.3. Разделы: Пользователи, Кабинеты, Логи аудита, Управление сообщениями.
+
+11.4. Использование общих компонентов из main-app (нужно вынести их в отдельную папку ./frontend/shared/components и импортировать).
+
+ШАГ 12: Документация и финализация
+
+12.1. Настройка L5-Swagger: аннотирование всех контроллеров и методов.
+
+12.2. Генерация документации: php artisan l5-swagger:generate.
+
+12.3. Написание исчерпывающего README.md:
+
+Инструкция по установке и запуску.
+
+Описание API и архитектуры.
+
+SQL-запросы для экстренных случаев (смена владельца, добавление админа).
+
+Описание процесса добавления новых разрешений.
+
+12.4. Написание скриптов для деплоя (Dockerfile, docker-compose.yml по необходимости).
