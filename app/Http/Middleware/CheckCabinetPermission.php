@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Models\CabinetUser;
+use App\Models\Cabinet;
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
 final class CheckCabinetPermission
 {
@@ -16,28 +17,37 @@ final class CheckCabinetPermission
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string $permission): BaseResponse
     {
         $user = $request->user();
         
         if (!$user) {
             return response()->json([
-                'message' => 'Не авторизован',
-                'error_code' => 'UNAUTHORIZED'
+                'message' => 'Необходима аутентификация',
+                'error_code' => 'UNAUTHENTICATED'
             ], 401);
         }
 
-        // Get cabinet ID from request
+        // Получаем ID кабинета из заголовка или тела запроса
         $cabinetId = $this->getCabinetId($request);
         
         if (!$cabinetId) {
             return response()->json([
-                'message' => 'ID кабинета не указан',
+                'message' => 'Не указан ID кабинета',
                 'error_code' => 'CABINET_ID_REQUIRED'
             ], 400);
         }
 
-        // Check if user has permission in cabinet
+        // Проверяем, что кабинет существует
+        $cabinet = Cabinet::find($cabinetId);
+        if (!$cabinet) {
+            return response()->json([
+                'message' => 'Кабинет не найден',
+                'error_code' => 'CABINET_NOT_FOUND'
+            ], 404);
+        }
+
+        // Проверяем права пользователя в кабинете
         if (!$user->hasPermissionInCabinet($permission, $cabinetId)) {
             return response()->json([
                 'message' => 'Недостаточно прав для выполнения действия',
@@ -47,8 +57,8 @@ final class CheckCabinetPermission
             ], 403);
         }
 
-        // Add cabinet_id to request for use in controllers
-        $request->merge(['current_cabinet_id' => $cabinetId]);
+        // Добавляем кабинет в запрос для использования в контроллерах
+        $request->merge(['current_cabinet' => $cabinet]);
 
         return $next($request);
     }
@@ -58,25 +68,20 @@ final class CheckCabinetPermission
      */
     private function getCabinetId(Request $request): ?int
     {
-        // Try to get from header first
-        $cabinetId = $request->header('X-Cabinet-Id');
-        
-        if ($cabinetId) {
-            return (int) $cabinetId;
+        // 1. Из заголовка X-Cabinet-Id
+        if ($request->hasHeader('X-Cabinet-Id')) {
+            return (int) $request->header('X-Cabinet-Id');
         }
 
-        // Try to get from route parameter
-        $cabinetId = $request->route('cabinet');
-        
-        if ($cabinetId) {
-            return (int) $cabinetId;
+        // 2. Из параметра маршрута {cabinet}
+        if ($request->route('cabinet')) {
+            $cabinet = $request->route('cabinet');
+            return is_numeric($cabinet) ? (int) $cabinet : $cabinet->id;
         }
 
-        // Try to get from request body
-        $cabinetId = $request->input('cabinet_id');
-        
-        if ($cabinetId) {
-            return (int) $cabinetId;
+        // 3. Из тела запроса
+        if ($request->has('cabinet_id')) {
+            return (int) $request->input('cabinet_id');
         }
 
         return null;

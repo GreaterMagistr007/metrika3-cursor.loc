@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-final class CabinetUserTest extends TestCase
+final class CabinetUserTestFixed extends TestCase
 {
     use RefreshDatabase;
 
@@ -104,7 +104,7 @@ final class CabinetUserTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'Пользователь с таким номером телефона не найден',
+                'message' => 'Пользователь не найден',
                 'error_code' => 'USER_NOT_FOUND'
             ]);
     }
@@ -133,7 +133,7 @@ final class CabinetUserTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'Пользователь уже является участником кабинета',
+                'message' => 'Пользователь уже в кабинете',
                 'error_code' => 'USER_ALREADY_IN_CABINET'
             ]);
     }
@@ -250,7 +250,7 @@ final class CabinetUserTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'Пользователь с таким номером телефона не найден',
+                'message' => 'Пользователь не найден',
                 'error_code' => 'USER_NOT_FOUND'
             ]);
     }
@@ -269,7 +269,7 @@ final class CabinetUserTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'Пользователь не является участником кабинета',
+                'message' => 'Пользователь не найден в кабинете',
                 'error_code' => 'USER_NOT_IN_CABINET'
             ]);
     }

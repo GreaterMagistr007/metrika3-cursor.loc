@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-final class CabinetTest extends TestCase
+final class CabinetTestFixed extends TestCase
 {
     use RefreshDatabase;
 

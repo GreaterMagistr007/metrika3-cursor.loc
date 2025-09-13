@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\Cabinet;
+use App\Models\CabinetUser;
+use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,11 +24,25 @@ final class AuditTest extends TestCase
         parent::setUp();
         
         $this->user = User::factory()->create([
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'phone_verified_at' => now()
         ]);
         
-        $this->cabinet = Cabinet::factory()->create(['owner_id' => $this->user->id]);
+        // Create permissions
+        Permission::factory()->create(['name' => 'user.invite', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'user.remove', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'user.view', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'user.manage', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'cabinet.manage', 'category' => 'cabinet']);
+        Permission::factory()->create(['name' => 'cabinet.view', 'category' => 'cabinet']);
+        Permission::factory()->create(['name' => 'settings.view', 'category' => 'settings']);
+        
+        // Create cabinet using service to ensure proper setup with permissions
+        $this->cabinet = app(\App\Services\CabinetService::class)->createCabinet(
+            $this->user, 
+            'Test Cabinet', 
+            'Test Description'
+        );
     }
 
     /** @test */
@@ -97,7 +113,8 @@ final class AuditTest extends TestCase
         $token = $this->user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'X-Cabinet-Id' => $this->cabinet->id
         ])->putJson("/api/cabinets/{$this->cabinet->id}", $updateData);
 
         $response->assertStatus(200);
@@ -116,7 +133,8 @@ final class AuditTest extends TestCase
         $token = $this->user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'X-Cabinet-Id' => $this->cabinet->id
         ])->deleteJson("/api/cabinets/{$this->cabinet->id}");
 
         $response->assertStatus(200);
@@ -141,7 +159,8 @@ final class AuditTest extends TestCase
         $token = $this->user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'X-Cabinet-Id' => $this->cabinet->id
         ])->postJson("/api/cabinets/{$this->cabinet->id}/invite", $inviteData);
 
         $response->assertStatus(201);
@@ -167,7 +186,8 @@ final class AuditTest extends TestCase
         $token = $this->user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'X-Cabinet-Id' => $this->cabinet->id
         ])->deleteJson("/api/cabinets/{$this->cabinet->id}/users/{$otherUser->id}");
 
         $response->assertStatus(200);
@@ -197,7 +217,8 @@ final class AuditTest extends TestCase
         $token = $this->user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'X-Cabinet-Id' => $this->cabinet->id
         ])->patchJson("/api/cabinets/{$this->cabinet->id}/transfer-ownership", $transferData);
 
         $response->assertStatus(200);
@@ -214,7 +235,7 @@ final class AuditTest extends TestCase
     {
         $userData = [
             'name' => 'Test User',
-            'phone' => '+71234567890',
+            'phone' => '+79999999999',
             'telegram_id' => 123456789
         ];
 
@@ -222,11 +243,11 @@ final class AuditTest extends TestCase
 
         $response->assertStatus(201);
 
-        $user = User::where('phone', '+71234567890')->first();
+        $user = User::where('phone', '+79999999999')->first();
         
         // Check that user was created
         $this->assertDatabaseHas('users', [
-            'phone' => '+71234567890',
+            'phone' => '+79999999999',
             'name' => 'Test User'
         ]);
     }

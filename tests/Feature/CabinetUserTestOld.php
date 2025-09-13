@@ -21,14 +21,13 @@ final class CabinetUserTest extends TestCase
     private Cabinet $cabinet;
     private string $ownerToken;
     private string $managerToken;
-    private string $operatorToken;
 
     protected function setUp(): void
     {
         parent::setUp();
         
         $this->owner = User::factory()->create([
-            'phone' => '+71234567890',
+            'phone' => '+1234567890',
             'phone_verified_at' => now()
         ]);
         
@@ -42,24 +41,15 @@ final class CabinetUserTest extends TestCase
             'phone_verified_at' => now()
         ]);
         
-        // Create permissions
-        Permission::factory()->create(['name' => 'user.invite', 'category' => 'user']);
-        Permission::factory()->create(['name' => 'user.remove', 'category' => 'user']);
-        Permission::factory()->create(['name' => 'user.view', 'category' => 'user']);
-        Permission::factory()->create(['name' => 'user.manage', 'category' => 'user']);
-        Permission::factory()->create(['name' => 'cabinet.manage', 'category' => 'cabinet']);
-        Permission::factory()->create(['name' => 'settings.view', 'category' => 'settings']);
-        
-        // Create cabinet using service to ensure proper setup with permissions
-        $this->cabinet = app(\App\Services\CabinetService::class)->createCabinet(
-            $this->owner, 
-            'Test Cabinet', 
-            'Test Description'
-        );
+        $this->cabinet = Cabinet::factory()->create(['owner_id' => $this->owner->id]);
         
         $this->ownerToken = $this->owner->createToken('test')->plainTextToken;
         $this->managerToken = $this->manager->createToken('test')->plainTextToken;
-        $this->operatorToken = $this->operator->createToken('test')->plainTextToken;
+        
+        // Create permissions
+        Permission::factory()->create(['name' => 'user.invite', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'user.remove', 'category' => 'user']);
+        Permission::factory()->create(['name' => 'settings.view', 'category' => 'settings']);
     }
 
     /** @test */
@@ -71,8 +61,7 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->postJson("/api/cabinets/{$this->cabinet->id}/invite", $inviteData);
 
         $response->assertStatus(201)
@@ -98,8 +87,7 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->postJson("/api/cabinets/{$this->cabinet->id}/invite", $inviteData);
 
         $response->assertStatus(400)
@@ -112,7 +100,7 @@ final class CabinetUserTest extends TestCase
     /** @test */
     public function invite_fails_when_user_already_in_cabinet(): void
     {
-        // First add user to cabinet
+        // Add user to cabinet first
         CabinetUser::create([
             'cabinet_id' => $this->cabinet->id,
             'user_id' => $this->manager->id,
@@ -123,12 +111,11 @@ final class CabinetUserTest extends TestCase
 
         $inviteData = [
             'phone' => $this->manager->phone,
-            'role' => 'manager'
+            'role' => 'operator'
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->postJson("/api/cabinets/{$this->cabinet->id}/invite", $inviteData);
 
         $response->assertStatus(400)
@@ -141,8 +128,8 @@ final class CabinetUserTest extends TestCase
     /** @test */
     public function owner_can_remove_user_from_cabinet(): void
     {
-        // First add user to cabinet
-        CabinetUser::create([
+        // Add user to cabinet first
+        $cabinetUser = CabinetUser::create([
             'cabinet_id' => $this->cabinet->id,
             'user_id' => $this->manager->id,
             'role' => 'manager',
@@ -151,25 +138,21 @@ final class CabinetUserTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->deleteJson("/api/cabinets/{$this->cabinet->id}/users/{$this->manager->id}");
 
         $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Пользователь успешно удален из кабинета'
-            ]);
+            ->assertJson(['message' => 'Пользователь успешно удален из кабинета']);
 
         $this->assertDatabaseMissing('cabinet_user', [
-            'cabinet_id' => $this->cabinet->id,
-            'user_id' => $this->manager->id
+            'id' => $cabinetUser->id
         ]);
     }
 
     /** @test */
     public function manager_cannot_remove_user_from_cabinet(): void
     {
-        // First add manager to cabinet
+        // Add manager to cabinet
         CabinetUser::create([
             'cabinet_id' => $this->cabinet->id,
             'user_id' => $this->manager->id,
@@ -178,23 +161,30 @@ final class CabinetUserTest extends TestCase
             'joined_at' => now()
         ]);
 
+        // Add operator to cabinet
+        CabinetUser::create([
+            'cabinet_id' => $this->cabinet->id,
+            'user_id' => $this->operator->id,
+            'role' => 'operator',
+            'is_owner' => false,
+            'joined_at' => now()
+        ]);
+
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->managerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->managerToken
         ])->deleteJson("/api/cabinets/{$this->cabinet->id}/users/{$this->operator->id}");
 
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Недостаточно прав для выполнения действия',
-                'error_code' => 'INSUFFICIENT_PERMISSIONS',
-                'required_permission' => 'user.remove'
+                'message' => 'Только владелец может удалять пользователей',
+                'error_code' => 'CABINET_OWNER_REQUIRED'
             ]);
     }
 
     /** @test */
     public function owner_can_transfer_ownership(): void
     {
-        // First add manager to cabinet
+        // Add manager to cabinet
         CabinetUser::create([
             'cabinet_id' => $this->cabinet->id,
             'user_id' => $this->manager->id,
@@ -208,8 +198,7 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->patchJson("/api/cabinets/{$this->cabinet->id}/transfer-ownership", $transferData);
 
         $response->assertStatus(200)
@@ -244,8 +233,7 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->patchJson("/api/cabinets/{$this->cabinet->id}/transfer-ownership", $transferData);
 
         $response->assertStatus(400)
@@ -263,8 +251,7 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->patchJson("/api/cabinets/{$this->cabinet->id}/transfer-ownership", $transferData);
 
         $response->assertStatus(400)
@@ -277,11 +264,20 @@ final class CabinetUserTest extends TestCase
     /** @test */
     public function non_owner_cannot_transfer_ownership(): void
     {
-        // First add manager to cabinet
+        // Add manager to cabinet
         CabinetUser::create([
             'cabinet_id' => $this->cabinet->id,
             'user_id' => $this->manager->id,
             'role' => 'manager',
+            'is_owner' => false,
+            'joined_at' => now()
+        ]);
+
+        // Add operator to cabinet
+        CabinetUser::create([
+            'cabinet_id' => $this->cabinet->id,
+            'user_id' => $this->operator->id,
+            'role' => 'operator',
             'is_owner' => false,
             'joined_at' => now()
         ]);
@@ -291,15 +287,13 @@ final class CabinetUserTest extends TestCase
         ];
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->managerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->managerToken
         ])->patchJson("/api/cabinets/{$this->cabinet->id}/transfer-ownership", $transferData);
 
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Недостаточно прав для выполнения действия',
-                'error_code' => 'INSUFFICIENT_PERMISSIONS',
-                'required_permission' => 'cabinet.manage'
+                'message' => 'Только владелец может передать права владения',
+                'error_code' => 'CABINET_OWNER_REQUIRED'
             ]);
     }
 
@@ -320,8 +314,7 @@ final class CabinetUserTest extends TestCase
     public function invite_validates_required_fields(): void
     {
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->ownerToken,
-            'X-Cabinet-Id' => $this->cabinet->id
+            'Authorization' => 'Bearer ' . $this->ownerToken
         ])->postJson("/api/cabinets/{$this->cabinet->id}/invite", []);
 
         $response->assertStatus(422)

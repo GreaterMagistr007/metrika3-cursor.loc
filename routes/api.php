@@ -36,12 +36,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\CabinetController::class, 'index']);
         Route::post('/', [\App\Http\Controllers\Api\CabinetController::class, 'store']);
         Route::get('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'show']);
-        Route::put('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'update']);
-        Route::delete('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'destroy']);
+        Route::put('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'update'])->middleware('cabinet.permission:cabinet.manage');
+        Route::delete('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'destroy'])->middleware('cabinet.permission:cabinet.manage');
         
         // Cabinet user management
-        Route::post('/{cabinet}/invite', [\App\Http\Controllers\Api\CabinetUserController::class, 'invite']);
-        Route::delete('/{cabinet}/users/{user}', [\App\Http\Controllers\Api\CabinetUserController::class, 'remove']);
-        Route::patch('/{cabinet}/transfer-ownership', [\App\Http\Controllers\Api\CabinetUserController::class, 'transferOwnership']);
+        Route::post('/{cabinet}/invite', [\App\Http\Controllers\Api\CabinetUserController::class, 'invite'])->middleware('cabinet.permission:user.invite');
+        Route::delete('/{cabinet}/users/{user}', [\App\Http\Controllers\Api\CabinetUserController::class, 'remove'])->middleware('cabinet.permission:user.remove');
+        Route::patch('/{cabinet}/transfer-ownership', [\App\Http\Controllers\Api\CabinetUserController::class, 'transferOwnership'])->middleware('cabinet.permission:cabinet.manage');
+        
+        // Cabinet user permissions
+        Route::get('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'index'])->middleware('cabinet.permission:user.view');
+        Route::post('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'store'])->middleware('cabinet.permission:user.manage');
+        Route::delete('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'destroy'])->middleware('cabinet.permission:user.manage');
     });
 });
