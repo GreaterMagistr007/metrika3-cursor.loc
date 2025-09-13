@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public authentication routes
 Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/request-otp', [AuthController::class, 'requestOtp']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/telegram', [AuthController::class, 'telegram']);

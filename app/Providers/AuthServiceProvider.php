@@ -16,8 +16,8 @@ final class AuthServiceProvider extends ServiceProvider
     {
         $this->app->singleton(AuthService::class, function ($app) {
             return new AuthService(
-                telegramBotToken: config('services.telegram.bot_token'),
-                telegramBotSecret: config('services.telegram.bot_secret')
+                telegramBotToken: config('services.telegram.bot_token') ?? '',
+                telegramBotSecret: config('services.telegram.bot_secret') ?? ''
             );
         });
     }

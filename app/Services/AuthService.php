@@ -27,7 +27,7 @@ final class AuthService
     {
         // Generate OTP
         $otp = $this->generateOtp();
-        
+
         // Store in cache
         Cache::put(
             self::OTP_CACHE_PREFIX . $phone,
@@ -47,7 +47,11 @@ final class AuthService
     public function verifyOtp(string $phone, string $otp): bool
     {
         $cachedOtp = Cache::get(self::OTP_CACHE_PREFIX . $phone);
-        
+
+//        var_dump([
+//            '$cachedOtp' => $cachedOtp
+//        ]);
+
         return $cachedOtp && hash_equals($cachedOtp, $otp);
     }
 
@@ -59,7 +63,7 @@ final class AuthService
         try {
             // Parse query string
             parse_str($initData, $data);
-            
+
             if (!isset($data['user']) || !isset($data['hash'])) {
                 return null;
             }
@@ -71,7 +75,7 @@ final class AuthService
 
             // Parse user data
             $userData = json_decode($data['user'], true);
-            
+
             if (!$userData) {
                 return null;
             }
@@ -87,7 +91,7 @@ final class AuthService
                 'error' => $e->getMessage(),
                 'init_data' => $initData
             ]);
-            
+
             return null;
         }
     }
@@ -111,9 +115,17 @@ final class AuthService
     private function sendOtpViaTelegram(string $phone, string $otp): void
     {
         try {
+            // Check if bot token is configured
+            if (empty($this->telegramBotToken)) {
+                Log::warning('Telegram bot token not configured, skipping OTP send', [
+                    'phone' => $phone
+                ]);
+                return;
+            }
+
             // Find user by phone to get telegram_id
             $user = \App\Models\User::where('phone', $phone)->first();
-            
+
             if (!$user || !$user->telegram_id) {
                 Log::warning('Cannot send OTP: user not found or no telegram_id', [
                     'phone' => $phone
@@ -150,7 +162,7 @@ final class AuthService
      */
     private function validateTelegramHash(array $data): bool
     {
-        if (!isset($data['hash'])) {
+        if (!isset($data['hash']) || empty($this->telegramBotSecret)) {
             return false;
         }
 
@@ -174,5 +186,62 @@ final class AuthService
         $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
         return hash_equals($hash, $calculatedHash);
+    }
+
+    /**
+     * Register a new user.
+     */
+    public function registerUser(array $data): array
+    {
+        try {
+            // Create user
+            $user = \App\Models\User::create([
+                'phone' => $data['phone'],
+                'name' => $data['name'],
+                'telegram_id' => $data['telegram_id'] ?? null,
+                'telegram_data' => $data['telegram_data'] ?? null,
+                'phone_verified_at' => null,
+                'last_login_at' => null,
+            ]);
+
+            // Log registration event
+            $user->logAuditEvent('user_registered', 'Пользователь зарегистрирован через API');
+
+            // Generate OTP for phone verification
+            $otp = $this->generateOtp();
+
+            // Store OTP in cache
+            Cache::put(
+                self::OTP_CACHE_PREFIX . $user->phone,
+                $otp,
+                self::OTP_CACHE_TTL
+            );
+
+            // Send OTP via Telegram if user has telegram_id
+            if ($user->telegram_id) {
+                $this->sendOtpViaTelegram($user->phone, $otp);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Пользователь успешно зарегистрирован. Код подтверждения отправлен.',
+                'user' => $user,
+                'otp_sent' => !empty($user->telegram_id),
+                'expires_in' => 300 // 5 minutes
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('User registration failed', [
+                'phone' => $data['phone'] ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Ошибка при регистрации пользователя',
+                'error' => $e->getMessage()
+            ];
+        }
     }
 }

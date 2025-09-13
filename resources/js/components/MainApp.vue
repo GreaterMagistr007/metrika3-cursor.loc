@@ -59,27 +59,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/useAuthStore.js';
 
 const router = useRouter();
-const user = ref(null);
-const isAuthenticated = ref(false);
+const authStore = useAuthStore();
+
+const user = computed(() => authStore.user);
+const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 const goToLogin = () => {
   router.push('/login');
 };
 
-const logout = () => {
-  // TODO: Реализовать logout
-  user.value = null;
-  isAuthenticated.value = false;
+const logout = async () => {
+  await authStore.logout();
   router.push('/login');
 };
 
 onMounted(() => {
-  // TODO: Проверить аутентификацию
-  // Пока что для демонстрации
-  isAuthenticated.value = false;
+  // Initialize authentication state
+  authStore.initAuth();
 });
 </script>

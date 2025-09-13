@@ -32,18 +32,31 @@
             name="otp"
             type="text"
             required
+            maxlength="6"
             class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-            placeholder="Введите код из SMS"
+            placeholder="Введите код из Telegram"
           />
+          <div v-if="timeLeft > 0" class="mt-2 text-sm text-gray-600 text-center">
+            Код действителен еще: {{ formatTime(timeLeft) }}
+          </div>
+          <div v-else class="mt-2 text-center">
+            <button
+              type="button"
+              @click="resendOtp"
+              class="text-sm text-blue-600 hover:text-blue-500"
+            >
+              Отправить код повторно
+            </button>
+          </div>
         </div>
 
         <div>
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="authStore.loading"
             class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            <span v-if="loading" class="absolute left-0 inset-y-0 flex items-center pl-3">
+            <span v-if="authStore.loading" class="absolute left-0 inset-y-0 flex items-center pl-3">
               <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -65,9 +78,9 @@
       <div class="text-center">
         <p class="text-sm text-gray-600">
           Нет аккаунта? 
-          <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
-            Обратитесь к администратору
-          </a>
+          <router-link to="/register" class="font-medium text-blue-600 hover:text-blue-500">
+            Зарегистрироваться
+          </router-link>
         </p>
       </div>
     </div>
@@ -75,44 +88,107 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/useAuthStore.js';
 
 const router = useRouter();
+const authStore = useAuthStore();
+
 const phone = ref('');
 const otp = ref('');
 const showOtpInput = ref(false);
-const loading = ref(false);
 const error = ref('');
 const success = ref('');
+const otpTimer = ref(null);
+const timeLeft = ref(0);
+
+// Check if we're in Telegram Mini App
+const isTelegramApp = ref(false);
+
+onMounted(() => {
+  // Check if we're in Telegram Mini App
+  if (window.Telegram && window.Telegram.WebApp) {
+    isTelegramApp.value = true;
+    handleTelegramAuth();
+  }
+});
+
+const handleTelegramAuth = async () => {
+  try {
+    const initData = window.Telegram.WebApp.initData;
+    if (initData) {
+      const result = await authStore.loginWithTelegram(initData);
+      if (result.success) {
+        router.push('/');
+      } else {
+        error.value = result.message;
+        // If phone is required, show phone input
+        if (result.message.includes('номер телефона')) {
+          showOtpInput.value = false;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Telegram auth error:', err);
+    error.value = 'Ошибка авторизации через Telegram';
+  }
+};
 
 const handleSubmit = async () => {
-  loading.value = true;
   error.value = '';
   success.value = '';
 
-  try {
-    if (!showOtpInput.value) {
-      // Запрос OTP
-      // TODO: Реализовать API вызов
-      console.log('Запрос OTP для номера:', phone.value);
+  if (!showOtpInput.value) {
+    // Request OTP
+    const result = await authStore.loginWithPhone(phone.value);
+    
+    if (result.success) {
       showOtpInput.value = true;
-      success.value = 'Код отправлен на номер ' + phone.value;
+      success.value = result.message;
+      startOtpTimer();
     } else {
-      // Проверка OTP
-      // TODO: Реализовать API вызов
-      console.log('Проверка OTP:', otp.value);
-      success.value = 'Успешная авторизация!';
-      
-      // Перенаправление на дашборд
-      setTimeout(() => {
-        router.push('/');
-      }, 1000);
+      error.value = result.message;
     }
-  } catch (err) {
-    error.value = 'Произошла ошибка. Попробуйте еще раз.';
-  } finally {
-    loading.value = false;
+  } else {
+    // Verify OTP
+    const result = await authStore.verifyOtp(phone.value, otp.value);
+    
+    if (result.success) {
+      success.value = result.message;
+      router.push('/');
+    } else {
+      error.value = result.message;
+    }
+  }
+};
+
+const startOtpTimer = () => {
+  timeLeft.value = 300; // 5 minutes
+  otpTimer.value = setInterval(() => {
+    timeLeft.value--;
+    if (timeLeft.value <= 0) {
+      clearInterval(otpTimer.value);
+      otpTimer.value = null;
+    }
+  }, 1000);
+};
+
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+const resendOtp = async () => {
+  if (timeLeft.value > 0) return;
+  
+  const result = await authStore.loginWithPhone(phone.value);
+  if (result.success) {
+    success.value = result.message;
+    startOtpTimer();
+  } else {
+    error.value = result.message;
   }
 };
 </script>

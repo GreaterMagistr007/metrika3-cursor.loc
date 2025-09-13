@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Auth\LoginRequest;
+use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Http\Requests\Api\Auth\TelegramAuthRequest;
 use App\Http\Requests\Api\Auth\VerifyOtpRequest;
 use App\Models\User;
@@ -235,5 +236,45 @@ final class AuthController extends Controller
                 'last_login_at' => $user->last_login_at,
             ]
         ]);
+    }
+
+    /**
+     * Register a new user.
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->authService->registerUser($request->validated());
+
+            if ($result['success']) {
+                return response()->json([
+                    'message' => $result['message'],
+                    'user' => [
+                        'id' => $result['user']->id,
+                        'name' => $result['user']->name,
+                        'phone' => $result['user']->phone,
+                        'telegram_id' => $result['user']->telegram_id,
+                    ],
+                    'otp_sent' => $result['otp_sent'],
+                    'expires_in' => $result['expires_in']
+                ], 201);
+            } else {
+                return response()->json([
+                    'message' => $result['message'],
+                    'error_code' => 'REGISTRATION_FAILED'
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Registration failed', [
+                'error' => $e->getMessage(),
+                'data' => $request->validated()
+            ]);
+
+            return response()->json([
+                'message' => 'Ошибка регистрации. Попробуйте позже.',
+                'error_code' => 'REGISTRATION_ERROR'
+            ], 500);
+        }
     }
 }
