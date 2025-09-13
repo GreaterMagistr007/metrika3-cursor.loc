@@ -31,12 +31,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
     });
 
-    // Cabinet routes (will be implemented in next steps)
+    // Cabinet routes
     Route::prefix('cabinets')->group(function () {
-        // Route::get('/', [CabinetController::class, 'index']);
-        // Route::post('/', [CabinetController::class, 'store']);
-        // Route::get('/{cabinet}', [CabinetController::class, 'show']);
-        // Route::put('/{cabinet}', [CabinetController::class, 'update']);
-        // Route::delete('/{cabinet}', [CabinetController::class, 'destroy']);
+        Route::get('/', [\App\Http\Controllers\Api\CabinetController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\CabinetController::class, 'store']);
+        Route::get('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'show']);
+        Route::put('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'update']);
+        Route::delete('/{cabinet}', [\App\Http\Controllers\Api\CabinetController::class, 'destroy']);
+        
+        // Cabinet user management
+        Route::post('/{cabinet}/invite', [\App\Http\Controllers\Api\CabinetUserController::class, 'invite']);
+        Route::delete('/{cabinet}/users/{user}', [\App\Http\Controllers\Api\CabinetUserController::class, 'remove']);
+        Route::patch('/{cabinet}/transfer-ownership', [\App\Http\Controllers\Api\CabinetUserController::class, 'transferOwnership']);
     });
 });

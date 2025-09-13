@@ -20,6 +20,8 @@ final class AuthServiceProvider extends ServiceProvider
                 telegramBotSecret: config('services.telegram.bot_secret') ?? ''
             );
         });
+
+        $this->app->singleton(\App\Services\CabinetService::class);
     }
 
     /**

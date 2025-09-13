@@ -31,6 +31,7 @@ final class CabinetUser extends Model
         'cabinet_id',
         'user_id',
         'role',
+        'is_owner',
         'joined_at',
     ];
 
@@ -42,6 +43,7 @@ final class CabinetUser extends Model
     protected function casts(): array
     {
         return [
+            'is_owner' => 'boolean',
             'joined_at' => 'datetime',
         ];
     }
