@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Admin\AuditLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -48,5 +49,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'index'])->middleware('cabinet.permission:user.view');
         Route::post('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'store'])->middleware('cabinet.permission:user.manage');
         Route::delete('/{cabinet}/users/{user}/permissions', [\App\Http\Controllers\Api\CabinetUserPermissionController::class, 'destroy'])->middleware('cabinet.permission:user.manage');
+    });
+
+    // Admin routes
+    Route::prefix('admin')->group(function () {
+        // Audit logs
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/audit-logs/statistics', [AuditLogController::class, 'statistics']);
+        Route::get('/audit-logs/recent', [AuditLogController::class, 'recent']);
     });
 });

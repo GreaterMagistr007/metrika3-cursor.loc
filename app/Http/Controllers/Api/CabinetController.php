@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CabinetCreated;
+use App\Events\CabinetDeleted;
+use App\Events\CabinetUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CabinetRequest;
 use App\Http\Resources\CabinetResource;
@@ -59,6 +62,14 @@ final class CabinetController extends Controller
                 $user,
                 $request->validated()['name'],
                 $request->validated()['description'] ?? null
+            );
+
+            // Fire event for audit logging
+            CabinetCreated::dispatch(
+                $user,
+                $cabinet,
+                $request->ip(),
+                $request->userAgent()
             );
 
             return response()->json([
@@ -135,10 +146,35 @@ final class CabinetController extends Controller
                 ], 403);
             }
 
+            // Store original values for audit
+            $originalData = $cabinet->only(['name', 'description']);
+            
             $cabinet->update([
                 'name' => $request->validated()['name'],
                 'description' => $request->validated()['description'] ?? null,
             ]);
+
+            // Calculate changes for audit
+            $changes = [];
+            foreach ($originalData as $key => $value) {
+                if ($cabinet->$key !== $value) {
+                    $changes[$key] = [
+                        'old' => $value,
+                        'new' => $cabinet->$key
+                    ];
+                }
+            }
+
+            // Fire event for audit logging
+            if (!empty($changes)) {
+                CabinetUpdated::dispatch(
+                    $user,
+                    $cabinet,
+                    $changes,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+            }
 
             return response()->json([
                 'message' => 'Кабинет успешно обновлен',
@@ -174,6 +210,14 @@ final class CabinetController extends Controller
                     'error_code' => 'CABINET_OWNER_REQUIRED'
                 ], 403);
             }
+
+            // Fire event for audit logging before deletion
+            CabinetDeleted::dispatch(
+                $user,
+                $cabinet,
+                $request->ip(),
+                $request->userAgent()
+            );
 
             $this->cabinetService->deleteCabinet($cabinet);
 

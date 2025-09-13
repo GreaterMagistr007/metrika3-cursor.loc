@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\OwnershipTransferred;
+use App\Events\UserInvited;
+use App\Events\UserRemoved;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\InviteUserRequest;
 use App\Http\Resources\CabinetUserResource;
@@ -43,6 +46,16 @@ final class CabinetUserController extends Controller
             );
 
             if ($inviteResult['success']) {
+                // Fire event for audit logging
+                UserInvited::dispatch(
+                    $user,
+                    $inviteResult['invited_user'],
+                    $cabinet,
+                    $request->validated()['role'],
+                    $request->ip(),
+                    $request->userAgent()
+                );
+
                 return response()->json([
                     'message' => $inviteResult['message'],
                     'cabinet_user' => new CabinetUserResource($inviteResult['cabinet_user'])
@@ -92,6 +105,15 @@ final class CabinetUserController extends Controller
                 ], 400);
             }
 
+            // Fire event for audit logging before removal
+            UserRemoved::dispatch(
+                $currentUser,
+                $user,
+                $cabinet,
+                $request->ip(),
+                $request->userAgent()
+            );
+
             $this->cabinetService->removeUserFromCabinet($cabinet, $user);
 
             return response()->json([
@@ -139,6 +161,15 @@ final class CabinetUserController extends Controller
             );
 
             if ($transferResult['success']) {
+                // Fire event for audit logging
+                OwnershipTransferred::dispatch(
+                    $currentUser,
+                    $transferResult['new_owner'],
+                    $cabinet,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+
                 return response()->json([
                     'message' => $transferResult['message'],
                     'cabinet' => new CabinetUserResource($transferResult['cabinet_user'])

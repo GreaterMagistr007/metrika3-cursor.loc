@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\PermissionAssigned;
+use App\Events\PermissionRevoked;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\AssignPermissionRequest;
 use App\Http\Resources\PermissionResource;
@@ -112,12 +114,17 @@ final class CabinetUserPermissionController extends Controller
             // Clear permission cache
             $this->clearUserPermissionCache($user->id, $cabinet->id);
 
-            // Log the action
-            $currentUser->logAuditEvent('permissions_assigned', 'Назначены права пользователю', [
-                'target_user_id' => $user->id,
-                'cabinet_id' => $cabinet->id,
-                'permissions' => $permissions->pluck('name')->toArray()
-            ]);
+            // Fire events for audit logging
+            foreach ($permissions as $permission) {
+                PermissionAssigned::dispatch(
+                    $currentUser,
+                    $user,
+                    $cabinet,
+                    $permission,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+            }
 
             return response()->json([
                 'message' => 'Права успешно назначены',
@@ -176,18 +183,26 @@ final class CabinetUserPermissionController extends Controller
                 ], 400);
             }
 
+            // Get permissions before removal for audit
+            $permissions = Permission::whereIn('id', $permissionIds)->get();
+
             // Remove permissions
             $cabinetUser->permissions()->detach($permissionIds);
 
             // Clear permission cache
             $this->clearUserPermissionCache($user->id, $cabinet->id);
 
-            // Log the action
-            $currentUser->logAuditEvent('permissions_removed', 'Удалены права пользователя', [
-                'target_user_id' => $user->id,
-                'cabinet_id' => $cabinet->id,
-                'permission_ids' => $permissionIds
-            ]);
+            // Fire events for audit logging
+            foreach ($permissions as $permission) {
+                PermissionRevoked::dispatch(
+                    $currentUser,
+                    $user,
+                    $cabinet,
+                    $permission,
+                    $request->ip(),
+                    $request->userAgent()
+                );
+            }
 
             return response()->json([
                 'message' => 'Права успешно удалены'

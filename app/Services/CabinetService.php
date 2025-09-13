@@ -97,7 +97,8 @@ final class CabinetService
                 return [
                     'success' => true,
                     'message' => 'Пользователь успешно приглашен в кабинет',
-                    'cabinet_user' => $cabinetUser
+                    'cabinet_user' => $cabinetUser,
+                    'invited_user' => $user
                 ];
             });
 
@@ -196,7 +197,8 @@ final class CabinetService
                 return [
                     'success' => true,
                     'message' => 'Права владения успешно переданы',
-                    'cabinet_user' => $cabinetUser
+                    'cabinet_user' => $cabinetUser,
+                    'new_owner' => $newOwner
                 ];
             });
 
