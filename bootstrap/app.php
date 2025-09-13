@@ -15,7 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'cabinet.permission' => \App\Http\Middleware\CheckCabinetPermission::class,
+            'system.messages' => \App\Http\Middleware\SystemMessagesMiddleware::class,
         ]);
+        
+        // Add system messages middleware to API routes
+        $middleware->append(\App\Http\Middleware\SystemMessagesMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

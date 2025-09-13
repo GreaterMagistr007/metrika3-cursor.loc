@@ -106,11 +106,11 @@ final class Message extends Model
     }
 
     /**
-     * Check if message is broadcast type.
+     * Check if message is system type (broadcast).
      */
-    public function isBroadcast(): bool
+    public function isSystem(): bool
     {
-        return $this->type === 'broadcast';
+        return $this->type === 'system';
     }
 
     /**
@@ -118,7 +118,7 @@ final class Message extends Model
      */
     public function isPersistent(): bool
     {
-        return $this->type === 'persistent';
+        return in_array($this->type, ['info', 'warning', 'error']);
     }
 
     /**
@@ -126,6 +126,14 @@ final class Message extends Model
      */
     public function isToast(): bool
     {
-        return $this->type === 'toast';
+        return in_array($this->type, ['success', 'error', 'warning', 'info']);
+    }
+
+    /**
+     * Get available message types.
+     */
+    public static function getTypes(): array
+    {
+        return ['success', 'error', 'warning', 'info', 'system'];
     }
 }

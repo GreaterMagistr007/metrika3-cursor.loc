@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->string('type'); // toast, persistent, broadcast
+            $table->string('type'); // success, error, warning, info, system
             $table->string('title')->nullable();
             $table->text('text');
             $table->string('url')->nullable();

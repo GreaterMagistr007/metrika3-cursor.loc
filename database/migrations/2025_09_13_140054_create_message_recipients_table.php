@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('message_recipients', function (Blueprint $table) {
             $table->id();
             $table->foreignId('message_id')->constrained('messages')->onDelete('cascade');
-            $table->string('recipient_type'); // user, cabinet, all
+            $table->enum('recipient_type', ['user', 'cabinet', 'all']);
             $table->unsignedBigInteger('recipient_id')->nullable(); // ID пользователя или кабинета
             $table->timestamps();
             
