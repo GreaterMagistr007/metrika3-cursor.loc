@@ -239,6 +239,12 @@ const fetchCabinets = async (page = 1) => {
     pagination.value = response.data.meta;
   } catch (error) {
     console.error('Ошибка загрузки кабинетов:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при загрузке кабинетов';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   } finally {
     loading.value = false;
   }
@@ -264,8 +270,19 @@ const toggleCabinetStatus = async (cabinet) => {
   try {
     await axios.patch(`/cabinets/${cabinet.id}/toggle-status`);
     await fetchCabinets(pagination.value.current_page);
+    
+    // Показываем уведомление об успехе
+    if (window.showSuccessToast) {
+      window.showSuccessToast('Успешно!', 'Статус кабинета изменен');
+    }
   } catch (error) {
     console.error('Ошибка изменения статуса кабинета:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при изменении статуса кабинета';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   }
 };
 
@@ -274,8 +291,19 @@ const deleteCabinet = async (cabinet) => {
     try {
       await axios.delete(`/cabinets/${cabinet.id}`);
       await fetchCabinets(pagination.value.current_page);
+      
+      // Показываем уведомление об успехе
+      if (window.showSuccessToast) {
+        window.showSuccessToast('Успешно!', 'Кабинет успешно удален');
+      }
     } catch (error) {
       console.error('Ошибка удаления кабинета:', error);
+      
+      // Показываем уведомление об ошибке
+      if (window.showErrorToast) {
+        const errorMessage = error.response?.data?.message || 'Произошла ошибка при удалении кабинета';
+        window.showErrorToast('Ошибка!', errorMessage);
+      }
     }
   }
 };

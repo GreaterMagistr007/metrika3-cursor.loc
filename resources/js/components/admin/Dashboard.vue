@@ -233,6 +233,12 @@ const fetchStatistics = async () => {
     statistics.value = response.data;
   } catch (error) {
     console.error('Ошибка загрузки статистики:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при загрузке статистики';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   }
 };
 
@@ -243,6 +249,12 @@ const fetchRecentLogs = async () => {
     recentLogs.value = response.data;
   } catch (error) {
     console.error('Ошибка загрузки логов:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при загрузке логов аудита';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   } finally {
     loading.value = false;
   }

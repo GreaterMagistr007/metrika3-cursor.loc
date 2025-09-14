@@ -348,6 +348,12 @@ const fetchUsers = async (page = 1) => {
     pagination.value = response.data.meta;
   } catch (error) {
     console.error('Ошибка загрузки пользователей:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при загрузке пользователей';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   } finally {
     loading.value = false;
   }
@@ -392,9 +398,19 @@ const saveUser = async () => {
     await axios.put(`/users/${selectedUser.value.id}`, editForm.value);
     await fetchUsers(pagination.value.current_page);
     closeModals();
+    
+    // Показываем уведомление об успехе
+    if (window.showSuccessToast) {
+      window.showSuccessToast('Успешно!', 'Пользователь успешно обновлен');
+    }
   } catch (error) {
     console.error('Ошибка сохранения пользователя:', error);
-    alert('Ошибка при сохранении пользователя');
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при обновлении пользователя';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   }
 };
 
@@ -403,8 +419,19 @@ const deleteUser = async (user) => {
     try {
       await axios.delete(`/users/${user.id}`);
       await fetchUsers(pagination.value.current_page);
+      
+      // Показываем уведомление об успехе
+      if (window.showSuccessToast) {
+        window.showSuccessToast('Успешно!', 'Пользователь успешно удален');
+      }
     } catch (error) {
       console.error('Ошибка удаления пользователя:', error);
+      
+      // Показываем уведомление об ошибке
+      if (window.showErrorToast) {
+        const errorMessage = error.response?.data?.message || 'Произошла ошибка при удалении пользователя';
+        window.showErrorToast('Ошибка!', errorMessage);
+      }
     }
   }
 };

@@ -76,13 +76,17 @@
         <router-view />
       </main>
     </div>
+    
+    <!-- Toast уведомления -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAdminAuthStore } from '../stores/useAdminAuthStore';
+import Toast from './admin/Toast.vue';
 
 const router = useRouter();
 const adminAuthStore = useAdminAuthStore();

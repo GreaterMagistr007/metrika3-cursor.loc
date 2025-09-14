@@ -106,14 +106,29 @@ const handleLogin = async () => {
     const result = await adminAuthStore.login(phone.value);
     
     if (result.success) {
+      // Показываем уведомление об успехе
+      if (window.showSuccessToast) {
+        window.showSuccessToast('Успешно!', 'Вы успешно авторизованы');
+      }
+      
       // Успешный вход - перенаправляем на дашборд
       router.push('/');
     } else {
       error.value = result.error;
+      
+      // Показываем уведомление об ошибке
+      if (window.showErrorToast) {
+        window.showErrorToast('Ошибка авторизации!', result.error);
+      }
     }
   } catch (err) {
     error.value = 'Произошла ошибка при входе в систему';
     console.error('Login error:', err);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      window.showErrorToast('Ошибка!', 'Произошла ошибка при входе в систему');
+    }
   } finally {
     loading.value = false;
   }
