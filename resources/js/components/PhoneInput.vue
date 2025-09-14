@@ -4,6 +4,8 @@
       :id="id"
       :value="formattedValue"
       @input="handleInput"
+      @keydown="handleKeydown"
+      @paste="handlePaste"
       @blur="handleBlur"
       :placeholder="placeholder"
       :class="inputClass"
@@ -15,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 
 const props = defineProps({
   id: {
@@ -99,6 +101,36 @@ const formattedValue = computed(() => {
   return formatPhone(props.modelValue);
 });
 
+const handleKeydown = (event) => {
+  // Разрешенные символы: цифры, +, -, (, ), пробел, Backspace, Delete, Tab, Enter, стрелки
+  const allowedKeys = [
+    'Backspace', 'Delete', 'Tab', 'Enter', 'Escape',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Home', 'End'
+  ];
+  
+  // Разрешенные символы для ввода
+  const allowedChars = /[0-9+\-() ]/;
+  
+  // Если это служебная клавиша, разрешаем
+  if (allowedKeys.includes(event.key)) {
+    return;
+  }
+  
+  // Если это разрешенный символ, разрешаем
+  if (allowedChars.test(event.key)) {
+    return;
+  }
+  
+  // Если это Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, разрешаем
+  if (event.ctrlKey && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
+    return;
+  }
+  
+  // Во всех остальных случаях блокируем
+  event.preventDefault();
+};
+
 const handleInput = (event) => {
   const input = event.target;
   const cursorPosition = input.selectionStart;
@@ -114,10 +146,41 @@ const handleInput = (event) => {
   emit('update:modelValue', cleaned);
   
   // Восстанавливаем позицию курсора
-  this.$nextTick(() => {
+  nextTick(() => {
     const newCursorPosition = Math.min(cursorPosition, formatted.length);
     input.setSelectionRange(newCursorPosition, newCursorPosition);
   });
+};
+
+const handlePaste = (event) => {
+  // Получаем данные из буфера обмена
+  const pastedData = (event.clipboardData || window.clipboardData).getData('text');
+  
+  // Очищаем вставленные данные от недопустимых символов
+  const cleanedData = pastedData.replace(/[^0-9+\-() ]/g, '');
+  
+  // Если есть недопустимые символы, заменяем вставку
+  if (cleanedData !== pastedData) {
+    event.preventDefault();
+    
+    // Вставляем очищенные данные
+    const input = event.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const currentValue = input.value;
+    
+    const newValue = currentValue.substring(0, start) + cleanedData + currentValue.substring(end);
+    const cleaned = cleanPhone(newValue);
+    const formatted = formatPhone(cleaned);
+    
+    emit('update:modelValue', cleaned);
+    
+    // Устанавливаем курсор в конец вставленного текста
+    nextTick(() => {
+      const newPosition = start + cleanedData.length;
+      input.setSelectionRange(newPosition, newPosition);
+    });
+  }
 };
 
 const handleBlur = (event) => {
