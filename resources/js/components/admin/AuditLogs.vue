@@ -13,27 +13,20 @@
             <SearchInput
               id="user"
               v-model="filters.user"
+              label="Пользователь"
               placeholder="Поиск по пользователю..."
               @search="handleSearch"
               @clear="handleClearUserSearch"
             />
           </div>
           <div>
-            <label for="event" class="block text-sm font-medium text-gray-700">Событие</label>
-            <select
+            <SelectInput
               id="event"
               v-model="filters.event"
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            >
-              <option value="">Все события</option>
-              <option value="user.created">Создание пользователя</option>
-              <option value="user.updated">Обновление пользователя</option>
-              <option value="cabinet.created">Создание кабинета</option>
-              <option value="cabinet.updated">Обновление кабинета</option>
-              <option value="cabinet.deleted">Удаление кабинета</option>
-              <option value="permission.assigned">Назначение прав</option>
-              <option value="permission.revoked">Отзыв прав</option>
-            </select>
+              label="Событие"
+              placeholder="Все события"
+              :options="eventOptions"
+            />
           </div>
           <div>
             <DateInput
@@ -88,20 +81,34 @@
                 </div>
                 <div class="ml-4 flex-1">
                   <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm font-medium text-gray-900">
-                        {{ getEventDescription(log.event) }}
-                      </p>
-                      <p class="text-sm text-gray-500">
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-2">
+                        <p class="text-sm font-medium text-gray-900">
+                          {{ getEventDescription(log.event) }}
+                        </p>
+                        <span v-if="log.subject_type" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {{ getSubjectTypeName(log.subject_type) }}
+                        </span>
+                        <span v-if="log.subject_id" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          ID: {{ log.subject_id }}
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-500 mt-1">
                         {{ log.description }}
                       </p>
+                      <div v-if="log.cabinet" class="mt-1 text-xs text-gray-400">
+                        Кабинет: {{ log.cabinet.name }}
+                      </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right ml-4">
                       <p class="text-sm text-gray-500">
                         {{ formatDate(log.created_at) }}
                       </p>
                       <p v-if="log.user" class="text-xs text-gray-400">
-                        {{ log.user.name || log.user.phone }}
+                        {{ log.user.name || log.user.phone }} (ID: {{ log.user.id }})
+                      </p>
+                      <p v-else class="text-xs text-gray-400">
+                        Система
                       </p>
                     </div>
                   </div>
@@ -190,6 +197,7 @@ import { ref, computed, onMounted } from 'vue';
 import axios from '../../api/adminAxios';
 import SearchInput from '../SearchInput.vue';
 import DateInput from '../DateInput.vue';
+import SelectInput from '../SelectInput.vue';
 
 const logs = ref([]);
 const loading = ref(false);
@@ -201,6 +209,20 @@ const filters = ref({
   date_from: '',
   date_to: ''
 });
+
+const eventOptions = ref([
+  { value: 'user.created', label: 'Создание пользователя' },
+  { value: 'user.updated', label: 'Обновление пользователя' },
+  { value: 'user.deleted', label: 'Удаление пользователя' },
+  { value: 'cabinet.created', label: 'Создание кабинета' },
+  { value: 'cabinet.updated', label: 'Обновление кабинета' },
+  { value: 'cabinet.deleted', label: 'Удаление кабинета' },
+  { value: 'permission.assigned', label: 'Назначение прав' },
+  { value: 'permission.revoked', label: 'Отзыв прав' },
+  { value: 'user.invited', label: 'Приглашение пользователя' },
+  { value: 'user.removed', label: 'Удаление пользователя' },
+  { value: 'ownership.transferred', label: 'Передача прав владения' }
+]);
 
 const visiblePages = computed(() => {
   if (!pagination.value) return [];
@@ -228,7 +250,7 @@ const fetchLogs = async (page = 1) => {
     });
     
     if (filters.value.user) {
-      params.append('user', filters.value.user);
+      params.append('user_id', filters.value.user);
     }
     
     if (filters.value.event) {
@@ -244,10 +266,14 @@ const fetchLogs = async (page = 1) => {
     }
     
     const response = await axios.get(`/audit-logs?${params}`);
-    logs.value = response.data.data;
-    pagination.value = response.data.meta;
+    logs.value = response.data.logs || [];
+    pagination.value = response.data.pagination || {};
   } catch (error) {
     console.error('Ошибка загрузки логов:', error);
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при загрузке логов аудита';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
   } finally {
     loading.value = false;
   }
@@ -276,6 +302,7 @@ const getEventDescription = (event) => {
   const descriptions = {
     'user.created': 'Создание пользователя',
     'user.updated': 'Обновление пользователя',
+    'user.deleted': 'Удаление пользователя',
     'cabinet.created': 'Создание кабинета',
     'cabinet.updated': 'Обновление кабинета',
     'cabinet.deleted': 'Удаление кабинета',
@@ -283,10 +310,26 @@ const getEventDescription = (event) => {
     'permission.revoked': 'Отзыв прав',
     'user.invited': 'Приглашение пользователя',
     'user.removed': 'Удаление пользователя',
-    'ownership.transferred': 'Передача прав владения'
+    'ownership.transferred': 'Передача прав владения',
+    'created': 'Создание',
+    'updated': 'Обновление',
+    'deleted': 'Удаление'
   };
   
   return descriptions[event] || event;
+};
+
+const getSubjectTypeName = (subjectType) => {
+  const typeNames = {
+    'App\\Models\\User': 'Пользователь',
+    'App\\Models\\Cabinet': 'Кабинет',
+    'App\\Models\\CabinetUser': 'Участник кабинета',
+    'App\\Models\\Permission': 'Право доступа',
+    'App\\Models\\Message': 'Сообщение',
+    'App\\Models\\AuditLog': 'Лог аудита'
+  };
+  
+  return typeNames[subjectType] || subjectType.split('\\').pop();
 };
 
 const formatDate = (dateString) => {

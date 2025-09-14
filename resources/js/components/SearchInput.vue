@@ -1,33 +1,43 @@
 <template>
-  <div class="relative">
-    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </div>
+  <div class="space-y-1">
+    <label v-if="label" :for="id" class="block text-sm font-medium text-gray-700">
+      {{ label }}
+      <span v-if="required" class="text-red-500">*</span>
+    </label>
     
-    <input
-      :id="id"
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :class="inputClass"
-      @input="handleInput"
-      @keydown.enter="handleSearch"
-      @blur="handleBlur"
-    />
-    
-    <div v-if="modelValue" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-      <button
-        @click="clearSearch"
-        class="text-gray-400 hover:text-gray-600 focus:outline-none"
-        type="button"
-      >
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-      </button>
+      </div>
+      
+      <input
+        :id="id"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :class="inputClass"
+        @input="handleInput"
+        @keydown.enter="handleSearch"
+        @blur="handleBlur"
+      />
+      
+      <div v-if="modelValue" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+        <button
+          @click="clearSearch"
+          class="text-gray-400 hover:text-gray-600 focus:outline-none"
+          type="button"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
+    
+    <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+    <p v-if="help" class="text-sm text-gray-500">{{ help }}</p>
   </div>
 </template>
 
@@ -43,13 +53,29 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  label: {
+    type: String,
+    default: ''
+  },
   placeholder: {
     type: String,
     default: 'Поиск...'
   },
+  required: {
+    type: Boolean,
+    default: false
+  },
   disabled: {
     type: Boolean,
     default: false
+  },
+  error: {
+    type: String,
+    default: ''
+  },
+  help: {
+    type: String,
+    default: ''
   },
   inputClass: {
     type: String,
