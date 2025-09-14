@@ -23,7 +23,9 @@ final class CabinetResource extends JsonResource
                 'name' => $this->owner->name,
                 'phone' => $this->owner->phone,
             ],
-            'users_count' => $this->users()->count(),
+            'users_count' => $this->whenLoaded('cabinetUsers', function () {
+                return $this->cabinetUsers->count();
+            }, 0),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

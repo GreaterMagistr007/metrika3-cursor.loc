@@ -25,7 +25,7 @@ final class RegisterRequest extends FormRequest
             'phone' => [
                 'required',
                 'string',
-                'regex:/^\+[1-9]\d{1,14}$/',
+                'regex:/^\+7\d{10}$/',
                 'unique:users,phone'
             ],
             'name' => [
@@ -53,7 +53,7 @@ final class RegisterRequest extends FormRequest
     {
         return [
             'phone.required' => 'Номер телефона обязателен',
-            'phone.regex' => 'Номер телефона должен быть в международном формате (+7XXXXXXXXXX)',
+            'phone.regex' => 'Номер телефона должен быть в формате +7XXXXXXXXXX (11 цифр после +7)',
             'phone.unique' => 'Пользователь с таким номером телефона уже существует',
             'name.required' => 'Имя обязательно',
             'name.min' => 'Имя должно содержать минимум 2 символа',

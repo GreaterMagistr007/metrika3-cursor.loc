@@ -4,6 +4,7 @@ import axios from 'axios';
 export const useMessageStore = defineStore('messages', {
     state: () => ({
         messages: [],
+        toasts: [],
         unreadCount: 0,
         loading: false,
     }),
@@ -73,9 +74,34 @@ export const useMessageStore = defineStore('messages', {
         /**
          * Show toast message
          */
-        showToast(message, type = 'info') {
-            // This would integrate with a toast notification system
-            console.log(`Toast [${type}]:`, message);
+        showToast(message, type = 'info', duration = 5000) {
+            const toast = {
+                id: Date.now() + Math.random(),
+                message,
+                type,
+                duration
+            };
+            
+            this.toasts.push(toast);
+            
+            // Auto remove after duration
+            setTimeout(() => {
+                this.removeToast(toast.id);
+            }, duration);
+        },
+
+        /**
+         * Remove toast
+         */
+        removeToast(toastId) {
+            this.toasts = this.toasts.filter(toast => toast.id !== toastId);
+        },
+
+        /**
+         * Clear all toasts
+         */
+        clearToasts() {
+            this.toasts = [];
         }
     }
 });

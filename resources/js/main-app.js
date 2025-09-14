@@ -9,6 +9,7 @@ import './api/axios.js'; // Initialize axios interceptors
 import Dashboard from './components/pages/Dashboard.vue';
 import Settings from './components/pages/Settings.vue';
 import Login from './components/pages/Login.vue';
+import Cabinets from './components/pages/Cabinets.vue';
 
 // Настройка роутера
 const routes = [
@@ -22,6 +23,12 @@ const routes = [
         path: '/settings', 
         name: 'settings', 
         component: Settings,
+        meta: { requiresAuth: true }
+    },
+    { 
+        path: '/cabinets', 
+        name: 'cabinets', 
+        component: Cabinets,
         meta: { requiresAuth: true }
     },
     { 

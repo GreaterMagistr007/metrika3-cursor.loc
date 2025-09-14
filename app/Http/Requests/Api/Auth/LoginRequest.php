@@ -27,7 +27,7 @@ final class LoginRequest extends FormRequest
             'phone' => [
                 'required',
                 'string',
-                'regex:/^\+[1-9]\d{1,14}$/', // E.164 format
+                'regex:/^\+7\d{10}$/', // Russian format
                 'max:20'
             ],
         ];
@@ -42,7 +42,7 @@ final class LoginRequest extends FormRequest
     {
         return [
             'phone.required' => 'Номер телефона обязателен',
-            'phone.regex' => 'Номер телефона должен быть в международном формате (+7XXXXXXXXXX)',
+            'phone.regex' => 'Номер телефона должен быть в формате +7XXXXXXXXXX (11 цифр после +7)',
             'phone.max' => 'Номер телефона не должен превышать 20 символов',
         ];
     }

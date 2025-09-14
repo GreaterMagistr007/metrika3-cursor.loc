@@ -13,14 +13,11 @@
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div>
           <label for="phone" class="sr-only">Номер телефона</label>
-          <input
+          <PhoneInput
             id="phone"
             v-model="phone"
-            name="phone"
-            type="tel"
-            required
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-            placeholder="+7 (999) 123-45-67"
+            :input-class="'appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm'"
+            :error="phoneError"
           />
         </div>
 
@@ -91,6 +88,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/useAuthStore.js';
+import PhoneInput from '../PhoneInput.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -100,6 +98,7 @@ const otp = ref('');
 const showOtpInput = ref(false);
 const error = ref('');
 const success = ref('');
+const phoneError = ref('');
 const otpTimer = ref(null);
 const timeLeft = ref(0);
 
@@ -138,8 +137,15 @@ const handleTelegramAuth = async () => {
 const handleSubmit = async () => {
   error.value = '';
   success.value = '';
+  phoneError.value = '';
 
   if (!showOtpInput.value) {
+    // Validate phone number
+    if (phone.value.length !== 12 || !phone.value.startsWith('+7')) {
+      phoneError.value = 'Номер телефона должен быть в формате +7XXXXXXXXXX';
+      return;
+    }
+
     // Request OTP
     const result = await authStore.loginWithPhone(phone.value);
     

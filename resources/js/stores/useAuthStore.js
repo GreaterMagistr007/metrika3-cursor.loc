@@ -237,6 +237,29 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
+         * Fetch user cabinets
+         */
+        async fetchUserCabinets() {
+            if (!this.token) return;
+
+            try {
+                const response = await api.get('/cabinets');
+                const cabinets = response.data.data || [];
+                
+                // Update user cabinets
+                if (this.user) {
+                    this.user.cabinets = cabinets;
+                    localStorage.setItem('user_data', JSON.stringify(this.user));
+                }
+                
+                return cabinets;
+            } catch (error) {
+                console.error('Failed to fetch user cabinets:', error);
+                return [];
+            }
+        },
+
+        /**
          * Set current cabinet
          */
         setCurrentCabinet(cabinet) {

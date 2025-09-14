@@ -30,14 +30,11 @@
           <!-- Phone field -->
           <div>
             <label for="phone" class="sr-only">Номер телефона</label>
-            <input
+            <PhoneInput
               id="phone"
               v-model="form.phone"
-              name="phone"
-              type="tel"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="+7 (999) 123-45-67"
+              :input-class="'appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'"
+              :error="phoneError"
               :disabled="authStore.loading"
             />
           </div>
@@ -124,6 +121,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/useAuthStore.js'
+import PhoneInput from '../PhoneInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -138,32 +136,37 @@ const form = ref({
 // UI state
 const error = ref('')
 const successMessage = ref('')
+const phoneError = ref('')
 
 // Computed
 const isFormValid = computed(() => {
   return form.value.name.trim().length >= 2 && 
-         form.value.phone.trim().length > 0
+         form.value.phone.length === 12 && 
+         form.value.phone.startsWith('+7')
 })
 
 // Methods
 const handleSubmit = async () => {
   error.value = ''
   successMessage.value = ''
+  phoneError.value = ''
 
   // Validate form
   if (!isFormValid.value) {
-    error.value = 'Пожалуйста, заполните все обязательные поля'
+    if (form.value.name.trim().length < 2) {
+      error.value = 'Имя должно содержать минимум 2 символа'
+    } else if (form.value.phone.length !== 12 || !form.value.phone.startsWith('+7')) {
+      phoneError.value = 'Номер телефона должен быть в формате +7XXXXXXXXXX'
+    } else {
+      error.value = 'Пожалуйста, заполните все обязательные поля'
+    }
     return
   }
-
-  // Format phone number
-  const phone = form.value.phone.replace(/\D/g, '')
-  const formattedPhone = phone.startsWith('7') ? `+${phone}` : `+7${phone}`
 
   // Prepare registration data
   const registrationData = {
     name: form.value.name.trim(),
-    phone: formattedPhone,
+    phone: form.value.phone,
     telegram_id: form.value.telegram_id ? parseInt(form.value.telegram_id) : null
   }
 
@@ -178,7 +181,7 @@ const handleSubmit = async () => {
       setTimeout(() => {
         router.push({
           name: 'login',
-          query: { phone: formattedPhone, message: 'Код подтверждения отправлен в Telegram' }
+          query: { phone: form.value.phone, message: 'Код подтверждения отправлен в Telegram' }
         })
       }, 2000)
     } else {
@@ -186,7 +189,7 @@ const handleSubmit = async () => {
       setTimeout(() => {
         router.push({
           name: 'login',
-          query: { phone: formattedPhone }
+          query: { phone: form.value.phone }
         })
       }, 2000)
     }
@@ -195,17 +198,4 @@ const handleSubmit = async () => {
   }
 }
 
-// Format phone input
-const formatPhone = (event) => {
-  let value = event.target.value.replace(/\D/g, '')
-  if (value.startsWith('7')) {
-    value = value.substring(1)
-  }
-  if (value.length > 0) {
-    value = `+7 (${value.substring(0, 3)}${value.length > 3 ? ') ' : ''}${value.substring(3, 6)}${value.length > 6 ? '-' : ''}${value.substring(6, 8)}${value.length > 8 ? '-' : ''}${value.substring(8, 10)}`
-  } else {
-    value = '+7 ('
-  }
-  form.value.phone = value
-}
 </script>

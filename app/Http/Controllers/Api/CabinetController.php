@@ -35,7 +35,7 @@ final class CabinetController extends Controller
             $cabinets = $user->cabinets()->with('owner')->get();
 
             return response()->json([
-                'cabinets' => CabinetResource::collection($cabinets)
+                'data' => CabinetResource::collection($cabinets)
             ]);
 
         } catch (\Exception $e) {
@@ -112,7 +112,7 @@ final class CabinetController extends Controller
             }]);
 
             return response()->json([
-                'cabinet' => new CabinetResource($cabinet),
+                'data' => new CabinetResource($cabinet),
                 'users' => CabinetUserResource::collection($cabinet->cabinetUsers)
             ]);
 

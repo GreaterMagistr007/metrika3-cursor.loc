@@ -110,6 +110,11 @@ final class User extends Authenticatable
      */
     public function hasPermissionInCabinet(string $permission, int $cabinetId): bool
     {
+        // Владельцы кабинета имеют все права
+        if ($this->isOwnerOf($cabinetId)) {
+            return true;
+        }
+
         $cabinetUser = CabinetUser::where('user_id', $this->id)
             ->where('cabinet_id', $cabinetId)
             ->first();

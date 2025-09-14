@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\TestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Test routes (for development only)
+Route::prefix('test')->group(function () {
+    Route::get('/get-current-otp', [TestController::class, 'getCurrentOtp']);
+});
 
 // Public authentication routes
 Route::prefix('auth')->group(function () {
