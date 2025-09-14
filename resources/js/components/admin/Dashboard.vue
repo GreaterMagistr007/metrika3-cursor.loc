@@ -229,7 +229,7 @@ const loading = ref(false);
 
 const fetchStatistics = async () => {
   try {
-    const response = await axios.get('/api/admin/statistics');
+    const response = await axios.get('/statistics');
     statistics.value = response.data;
   } catch (error) {
     console.error('Ошибка загрузки статистики:', error);
@@ -239,7 +239,7 @@ const fetchStatistics = async () => {
 const fetchRecentLogs = async () => {
   loading.value = true;
   try {
-    const response = await axios.get('/api/admin/audit-logs/recent?limit=5');
+    const response = await axios.get('/audit-logs/recent?limit=5');
     recentLogs.value = response.data;
   } catch (error) {
     console.error('Ошибка загрузки логов:', error);

@@ -244,7 +244,7 @@ const fetchLogs = async (page = 1) => {
       params.append('date_to', filters.value.date_to);
     }
     
-    const response = await axios.get(`/api/admin/audit-logs?${params}`);
+    const response = await axios.get(`/audit-logs?${params}`);
     logs.value = response.data.data;
     pagination.value = response.data.meta;
   } catch (error) {

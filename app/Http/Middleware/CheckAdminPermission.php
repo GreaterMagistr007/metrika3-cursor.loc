@@ -16,7 +16,7 @@ final class CheckAdminPermission
      */
     public function handle(Request $request, Closure $next, string $role = 'admin'): Response
     {
-        $admin = $request->user();
+        $admin = $request->user('admin');
 
         // Check if user is authenticated as admin
         if (!$admin instanceof AdminUser) {

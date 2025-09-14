@@ -350,7 +350,7 @@ const fetchMessages = async (page = 1) => {
       params.append('status', statusFilter.value);
     }
     
-    const response = await axios.get(`/api/admin/messages?${params}`);
+    const response = await axios.get(`/messages?${params}`);
     messages.value = response.data.data;
     pagination.value = response.data.meta;
   } catch (error) {
@@ -362,7 +362,7 @@ const fetchMessages = async (page = 1) => {
 
 const fetchStatistics = async () => {
   try {
-    const response = await axios.get('/api/admin/messages-statistics');
+    const response = await axios.get('/messages-statistics');
     statistics.value = response.data;
   } catch (error) {
     console.error('Ошибка загрузки статистики:', error);
@@ -394,7 +394,7 @@ const editMessage = (message) => {
 
 const toggleMessageStatus = async (message) => {
   try {
-    await axios.patch(`/api/admin/messages/${message.id}/toggle-active`);
+    await axios.patch(`/messages/${message.id}/toggle-active`);
     await fetchMessages(pagination.value.current_page);
   } catch (error) {
     console.error('Ошибка изменения статуса сообщения:', error);
@@ -404,7 +404,7 @@ const toggleMessageStatus = async (message) => {
 const deleteMessage = async (message) => {
   if (confirm(`Вы уверены, что хотите удалить сообщение "${message.title || message.text}"?`)) {
     try {
-      await axios.delete(`/api/admin/messages/${message.id}`);
+      await axios.delete(`/messages/${message.id}`);
       await fetchMessages(pagination.value.current_page);
     } catch (error) {
       console.error('Ошибка удаления сообщения:', error);

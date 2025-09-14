@@ -46,8 +46,8 @@ final class UserController extends Controller
             ->paginate($perPage);
 
         return response()->json([
-            'users' => UserResource::collection($users->items()),
-            'pagination' => [
+            'data' => UserResource::collection($users->items()),
+            'meta' => [
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),
                 'per_page' => $users->perPage(),

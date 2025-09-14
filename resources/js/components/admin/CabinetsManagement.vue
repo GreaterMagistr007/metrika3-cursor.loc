@@ -234,7 +234,7 @@ const fetchCabinets = async (page = 1) => {
       params.append('status', statusFilter.value);
     }
     
-    const response = await axios.get(`/api/admin/cabinets?${params}`);
+    const response = await axios.get(`/cabinets?${params}`);
     cabinets.value = response.data.data;
     pagination.value = response.data.meta;
   } catch (error) {
@@ -262,7 +262,7 @@ const editCabinet = (cabinet) => {
 
 const toggleCabinetStatus = async (cabinet) => {
   try {
-    await axios.patch(`/api/admin/cabinets/${cabinet.id}/toggle-status`);
+    await axios.patch(`/cabinets/${cabinet.id}/toggle-status`);
     await fetchCabinets(pagination.value.current_page);
   } catch (error) {
     console.error('Ошибка изменения статуса кабинета:', error);
@@ -272,7 +272,7 @@ const toggleCabinetStatus = async (cabinet) => {
 const deleteCabinet = async (cabinet) => {
   if (confirm(`Вы уверены, что хотите удалить кабинет "${cabinet.name}"?`)) {
     try {
-      await axios.delete(`/api/admin/cabinets/${cabinet.id}`);
+      await axios.delete(`/cabinets/${cabinet.id}`);
       await fetchCabinets(pagination.value.current_page);
     } catch (error) {
       console.error('Ошибка удаления кабинета:', error);

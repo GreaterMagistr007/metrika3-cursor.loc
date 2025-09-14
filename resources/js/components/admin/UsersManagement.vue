@@ -171,6 +171,122 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно просмотра пользователя -->
+    <div v-if="showViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Информация о пользователе</h3>
+            <button @click="closeModals" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div v-if="selectedUser" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Имя</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedUser.name || 'Не указано' }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Телефон</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedUser.phone }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Telegram ID</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedUser.telegram_id || 'Не указан' }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Последний вход</label>
+              <p class="mt-1 text-sm text-gray-900">{{ formatDate(selectedUser.last_login_at) }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Количество кабинетов</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedUser.cabinets_count || 0 }}</p>
+            </div>
+          </div>
+          
+          <div class="mt-6 flex justify-end">
+            <button @click="closeModals" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400">
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно редактирования пользователя -->
+    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Редактирование пользователя</h3>
+            <button @click="closeModals" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <form @submit.prevent="saveUser" class="space-y-4">
+            <div>
+              <label for="edit-name" class="block text-sm font-medium text-gray-700">Имя</label>
+              <input
+                id="edit-name"
+                v-model="editForm.name"
+                type="text"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Введите имя"
+              />
+            </div>
+            
+            <div>
+              <label for="edit-phone" class="block text-sm font-medium text-gray-700">Телефон</label>
+              <input
+                id="edit-phone"
+                v-model="editForm.phone"
+                type="text"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="+7 (XXX) XXX-XX-XX"
+              />
+            </div>
+            
+            <div>
+              <label for="edit-telegram" class="block text-sm font-medium text-gray-700">Telegram ID</label>
+              <input
+                id="edit-telegram"
+                v-model="editForm.telegram_id"
+                type="text"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Введите Telegram ID"
+              />
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                @click="closeModals"
+                class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+              >
+                Сохранить
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -183,6 +299,16 @@ const loading = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const pagination = ref(null);
+
+// Модальные окна
+const showViewModal = ref(false);
+const showEditModal = ref(false);
+const selectedUser = ref(null);
+const editForm = ref({
+  name: '',
+  phone: '',
+  telegram_id: ''
+});
 
 const visiblePages = computed(() => {
   if (!pagination.value) return [];
@@ -217,7 +343,7 @@ const fetchUsers = async (page = 1) => {
       params.append('status', statusFilter.value);
     }
     
-    const response = await axios.get(`/api/admin/users?${params}`);
+    const response = await axios.get(`/users?${params}`);
     users.value = response.data.data;
     pagination.value = response.data.meta;
   } catch (error) {
@@ -234,19 +360,48 @@ const changePage = (page) => {
 };
 
 const viewUser = (user) => {
-  // TODO: Реализовать просмотр пользователя
-  console.log('View user:', user);
+  selectedUser.value = user;
+  showViewModal.value = true;
 };
 
 const editUser = (user) => {
-  // TODO: Реализовать редактирование пользователя
-  console.log('Edit user:', user);
+  selectedUser.value = user;
+  editForm.value = {
+    name: user.name || '',
+    phone: user.phone || '',
+    telegram_id: user.telegram_id || ''
+  };
+  showEditModal.value = true;
+};
+
+const closeModals = () => {
+  showViewModal.value = false;
+  showEditModal.value = false;
+  selectedUser.value = null;
+  editForm.value = {
+    name: '',
+    phone: '',
+    telegram_id: ''
+  };
+};
+
+const saveUser = async () => {
+  if (!selectedUser.value) return;
+  
+  try {
+    await axios.put(`/users/${selectedUser.value.id}`, editForm.value);
+    await fetchUsers(pagination.value.current_page);
+    closeModals();
+  } catch (error) {
+    console.error('Ошибка сохранения пользователя:', error);
+    alert('Ошибка при сохранении пользователя');
+  }
 };
 
 const deleteUser = async (user) => {
   if (confirm(`Вы уверены, что хотите удалить пользователя ${user.name || user.phone}?`)) {
     try {
-      await axios.delete(`/api/admin/users/${user.id}`);
+      await axios.delete(`/users/${user.id}`);
       await fetchUsers(pagination.value.current_page);
     } catch (error) {
       console.error('Ошибка удаления пользователя:', error);

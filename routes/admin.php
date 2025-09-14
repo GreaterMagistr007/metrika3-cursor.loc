@@ -25,13 +25,13 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('api/admin/auth')->group(function () {
     Route::post('register', [AdminAuthController::class, 'register']);
     Route::post('login', [AdminAuthController::class, 'login']);
-    Route::post('logout', [AdminAuthController::class, 'logout'])->middleware('auth:sanctum');
-    Route::get('profile', [AdminAuthController::class, 'profile'])->middleware('auth:sanctum');
-    Route::put('profile', [AdminAuthController::class, 'updateProfile'])->middleware('auth:sanctum');
+    Route::post('logout', [AdminAuthController::class, 'logout'])->middleware('auth:admin');
+    Route::get('profile', [AdminAuthController::class, 'profile'])->middleware('auth:admin');
+    Route::put('profile', [AdminAuthController::class, 'updateProfile'])->middleware('auth:admin');
 });
 
 // Admin routes (require authentication and admin role)
-Route::prefix('api/admin')->middleware('auth:sanctum')->group(function () {
+Route::prefix('api/admin')->middleware('auth:admin')->group(function () {
     
     // Admin users management (super admin only)
     Route::middleware('admin:super_admin')->group(function () {
@@ -64,11 +64,22 @@ Route::prefix('api/admin')->middleware('auth:sanctum')->group(function () {
     // System statistics
     Route::get('statistics', function () {
         return response()->json([
-            'users_count' => \App\Models\User::count(),
-            'cabinets_count' => \App\Models\Cabinet::count(),
-            'admin_users_count' => \App\Models\AdminUser::count(),
-            'audit_logs_count' => \App\Models\AuditLog::count(),
-            'messages_count' => \App\Models\Message::count(),
+            'users' => [
+                'total' => \App\Models\User::count(),
+                'active' => \App\Models\User::whereNotNull('last_login_at')->count(),
+            ],
+            'cabinets' => [
+                'total' => \App\Models\Cabinet::count(),
+                'active' => \App\Models\Cabinet::where('is_active', true)->count(),
+            ],
+            'messages' => [
+                'total' => \App\Models\Message::count(),
+                'active' => \App\Models\Message::where('is_active', true)->count(),
+            ],
+            'audit_logs' => [
+                'total' => \App\Models\AuditLog::count(),
+                'today' => \App\Models\AuditLog::whereDate('created_at', today())->count(),
+            ],
         ]);
     })->middleware('admin');
 });

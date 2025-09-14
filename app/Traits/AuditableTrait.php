@@ -16,9 +16,23 @@ trait AuditableTrait
      */
     public function logAuditEvent(string $event, ?string $description = null, ?array $meta = null): AuditLog
     {
+        // Get user ID from either regular auth or admin auth
+        $userId = Auth::id();
+        
+        // For admin operations, set user_id to null to avoid foreign key issues
+        if (Auth::guard('admin')->check()) {
+            $userId = null; // Admin operations don't reference users table
+        }
+
+        // For admin operations, set cabinet_id to null to avoid foreign key issues
+        $cabinetId = null;
+        if (!Auth::guard('admin')->check()) {
+            $cabinetId = $this->getCabinetId();
+        }
+
         $data = [
-            'user_id' => Auth::id(),
-            'cabinet_id' => $this->getCabinetId(),
+            'user_id' => $userId,
+            'cabinet_id' => $cabinetId,
             'subject_type' => get_class($this),
             'subject_id' => $this->getKey(),
             'event' => $event,
