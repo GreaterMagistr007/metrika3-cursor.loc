@@ -22,7 +22,7 @@ export const useMessageStore = defineStore('messages', {
         async loadMessages() {
             this.loading = true;
             try {
-                const response = await axios.get('/api/messages');
+                const response = await axios.get('/messages');
                 this.messages = response.data.data || [];
                 this.updateUnreadCount();
             } catch (error) {
@@ -58,7 +58,7 @@ export const useMessageStore = defineStore('messages', {
          */
         async markAsRead(messageId) {
             try {
-                await axios.post(`/api/messages/${messageId}/read`);
+                await axios.post(`/messages/${messageId}/read`);
                 
                 const message = this.messages.find(msg => msg.id === messageId);
                 if (message) {

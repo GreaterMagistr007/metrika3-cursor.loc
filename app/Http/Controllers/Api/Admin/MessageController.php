@@ -113,8 +113,11 @@ final class MessageController extends Controller
             // Update message
             $message->update($messageData);
             
-            // Update recipients
+            // Delete old recipients and user_messages
             $message->recipients()->delete();
+            $message->userMessages()->delete();
+            
+            // Create new recipients
             foreach ($recipients as $recipient) {
                 $message->recipients()->create([
                     'recipient_type' => $recipient['type'],

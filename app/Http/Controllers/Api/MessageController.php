@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MarkMessageReadRequest;
+use App\Http\Resources\MessageResource;
 use App\Services\MessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ final class MessageController extends Controller
         $messages = $this->messageService->getAllMessagesForUser($request->user()->id, $perPage);
 
         return response()->json([
-            'data' => $messages->items(),
+            'data' => MessageResource::collection($messages->items()),
             'meta' => [
                 'current_page' => $messages->currentPage(),
                 'last_page' => $messages->lastPage(),
@@ -45,7 +46,7 @@ final class MessageController extends Controller
         $messages = $this->messageService->getUnreadMessagesForUser($request->user()->id);
 
         return response()->json([
-            'data' => $messages,
+            'data' => MessageResource::collection($messages),
             'count' => $messages->count(),
         ]);
     }
