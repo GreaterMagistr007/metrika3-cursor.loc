@@ -242,7 +242,7 @@ final class AuthController extends Controller
     }
 
     /**
-     * Check if user exists by Telegram ID.
+     * Check if user exists by Telegram ID, create if not exists.
      */
     public function checkUserByTelegram(Request $request): JsonResponse
     {
@@ -257,29 +257,33 @@ final class AuthController extends Controller
 
         $user = User::where('telegram_id', $telegramId)->first();
 
-        if ($user) {
-            // User exists - generate token and login
-            $token = $user->createToken('telegram-login')->plainTextToken;
-            
+        if (!$user) {
+            // User doesn't exist - create with empty name and phone
+            $user = User::create([
+                'name' => '',
+                'phone' => '',
+                'telegram_id' => $telegramId,
+                'phone_verified_at' => null,
+                'last_login_at' => now()
+            ]);
+        } else {
             // Update last login
             $user->update(['last_login_at' => now()]);
-
-            return response()->json([
-                'message' => 'User found and logged in successfully',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'phone' => $user->phone,
-                    'telegram_id' => $user->telegram_id,
-                ],
-                'token' => $token,
-                'user_exists' => true
-            ]);
         }
 
+        // Generate token and login
+        $token = $user->createToken('telegram-login')->plainTextToken;
+
         return response()->json([
-            'message' => 'User not found',
-            'user_exists' => false
+            'message' => 'User authenticated successfully',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'telegram_id' => $user->telegram_id,
+            ],
+            'token' => $token,
+            'needs_profile_completion' => empty($user->name) || empty($user->phone)
         ]);
     }
 
@@ -339,6 +343,66 @@ final class AuthController extends Controller
             return response()->json([
                 'message' => 'Ошибка начала регистрации. Попробуйте позже.',
                 'error_code' => 'REGISTRATION_START_ERROR'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user profile (name and phone).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            $request->validate([
+                'name' => 'required|string|min:2|max:30|regex:/^[а-яёА-ЯЁa-zA-Z\s]+$/',
+                'phone' => 'required|string|regex:/^\+7\d{10}$/'
+            ]);
+
+            $name = trim($request->input('name'));
+            $phone = $request->input('phone');
+
+            // Check if phone is already taken by another user
+            $existingUser = User::where('phone', $phone)->where('id', '!=', $user->id)->first();
+            if ($existingUser) {
+                return response()->json([
+                    'message' => 'Пользователь с таким номером телефона уже существует',
+                    'error_code' => 'PHONE_EXISTS'
+                ], 409);
+            }
+
+            // Update user profile
+            $user->update([
+                'name' => $name,
+                'phone' => $phone,
+                'phone_verified_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Профиль успешно обновлен',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'phone' => $user->phone,
+                    'telegram_id' => $user->telegram_id,
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Ошибка валидации данных',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Profile update failed', [
+                'user_id' => $request->user()?->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Ошибка обновления профиля. Попробуйте позже.',
+                'error_code' => 'PROFILE_UPDATE_FAILED'
             ], 500);
         }
     }

@@ -32,8 +32,15 @@ Route::prefix('auth')->group(function () {
     Route::post('/telegram', [AuthController::class, 'telegram']);
 });
 
-// Protected routes (require authentication)
+// Authentication routes that don't require complete profile
 Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('/update-profile', [AuthController::class, 'updateProfile']);
+    });
+});
+
+// Protected routes (require authentication and complete profile)
+Route::middleware(['auth:sanctum', 'profile.complete'])->group(function () {
     // Authentication routes
     Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);

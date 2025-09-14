@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
-         * Check if user exists by Telegram ID
+         * Check if user exists by Telegram ID, create if not exists
          */
         async checkUserByTelegram(telegramId) {
             this.loading = true;
@@ -82,21 +82,14 @@ export const useAuthStore = defineStore('auth', {
                     telegram_id: telegramId
                 });
 
-                if (response.data.user_exists) {
-                    // User exists - set auth data
-                    this.setAuthData(response.data.user, response.data.token);
-                    return {
-                        success: true,
-                        user_exists: true,
-                        message: response.data.message
-                    };
-                } else {
-                    return {
-                        success: true,
-                        user_exists: false,
-                        message: response.data.message
-                    };
-                }
+                // User found or created - set auth data
+                this.setAuthData(response.data.user, response.data.token);
+                return {
+                    success: true,
+                    user_exists: true,
+                    needs_profile_completion: response.data.needs_profile_completion,
+                    message: response.data.message
+                };
             } catch (error) {
                 this.error = this.getErrorMessage(error);
                 return {

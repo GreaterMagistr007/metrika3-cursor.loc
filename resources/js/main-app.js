@@ -49,6 +49,12 @@ const routes = [
         component: () => import('./components/pages/TelegramRegister.vue'),
         meta: { requiresGuest: true }
     },
+    { 
+        path: '/complete-profile', 
+        name: 'complete-profile', 
+        component: () => import('./components/pages/CompleteProfile.vue'),
+        meta: { requiresAuth: true }
+    },
 ];
 
 const router = createRouter({
@@ -76,6 +82,23 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresGuest && authStore.isAuthenticated) {
         next('/');
         return;
+    }
+    
+    // Check if profile is complete for authenticated users
+    if (authStore.isAuthenticated && authStore.user) {
+        const isProfileIncomplete = !authStore.user.name || !authStore.user.phone;
+        
+        // If profile is incomplete and not on complete-profile page, redirect
+        if (isProfileIncomplete && to.name !== 'complete-profile') {
+            next('/complete-profile');
+            return;
+        }
+        
+        // If profile is complete and on complete-profile page, redirect to dashboard
+        if (!isProfileIncomplete && to.name === 'complete-profile') {
+            next('/');
+            return;
+        }
     }
     
     next();

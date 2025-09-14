@@ -262,14 +262,17 @@ const checkUser = async () => {
       telegram_id: parseInt(telegramId)
     })
     
-    if (response.data.user_exists) {
-      // Пользователь найден - авторизуем
-      await authStore.setAuthData(response.data.user, response.data.token)
+    // Пользователь найден или создан - авторизуем
+    await authStore.setAuthData(response.data.user, response.data.token)
+    
+    if (response.data.needs_profile_completion) {
+      // Нужно завершить профиль - перенаправляем на страницу завершения
+      messageStore.showToast('Завершите регистрацию, указав имя и телефон', 'info')
+      router.push('/complete-profile')
+    } else {
+      // Профиль полный - переходим на главную
       messageStore.showToast('Добро пожаловать!', 'success')
       router.push('/')
-    } else {
-      // Пользователь не найден - показываем форму регистрации
-      showRegistrationForm.value = true
     }
   } catch (err) {
     console.error('Error checking user:', err)

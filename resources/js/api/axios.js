@@ -68,6 +68,15 @@ api.interceptors.response.use(
 
         // Handle 403 Forbidden
         if (error.response?.status === 403) {
+            // Check if it's a profile incomplete error
+            if (error.response.data?.error_code === 'PROFILE_INCOMPLETE') {
+                // Only redirect if not already on complete-profile page
+                if (window.location.pathname !== '/complete-profile') {
+                    window.location.href = '/complete-profile';
+                }
+                return;
+            }
+            
             messageStore.showToast('Недостаточно прав для выполнения действия', 'error');
         }
 

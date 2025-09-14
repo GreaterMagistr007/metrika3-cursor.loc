@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'cabinet.permission' => \App\Http\Middleware\CheckCabinetPermission::class,
             'system.messages' => \App\Http\Middleware\SystemMessagesMiddleware::class,
             'admin' => \App\Http\Middleware\CheckAdminPermission::class,
+            'profile.complete' => \App\Http\Middleware\CheckProfileComplete::class,
         ]);
         
         // Add system messages middleware to API routes

@@ -283,13 +283,13 @@ const handleClickOutside = (event) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   // Initialize authentication state
   authStore.initAuth();
   
   // Load user data if authenticated
   if (authStore.isAuthenticated) {
-    authStore.fetchUser();
+    await authStore.fetchUser();
   }
   
   // Add click outside listener
