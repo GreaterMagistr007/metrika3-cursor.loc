@@ -8,13 +8,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Repositories\AuditLogRepository;
+use App\Services\UserDeletionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class UserController extends Controller
 {
     public function __construct(
-        private readonly AuditLogRepository $auditLogRepository
+        private readonly AuditLogRepository $auditLogRepository,
+        private readonly UserDeletionService $userDeletionService
     ) {}
 
     /**
@@ -97,18 +99,32 @@ final class UserController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
-        // Check if user is owner of any cabinet
-        if ($user->cabinets()->wherePivot('is_owner', true)->exists()) {
-            return response()->json([
-                'message' => 'Невозможно удалить пользователя, который является владельцем кабинета',
-                'error_code' => 'USER_IS_OWNER',
-            ], 422);
-        }
+        try {
+            $deletionResult = $this->userDeletionService->deleteUserWithCascade($user);
 
-        $user->delete();
+            return response()->json([
+                'message' => 'Пользователь и все связанные данные успешно удалены',
+                'deleted_data' => [
+                    'cabinets_count' => count($deletionResult['cabinets']),
+                    'notified_users_count' => count($deletionResult['notified_users']),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Ошибка при удалении пользователя: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get deletion summary for user.
+     */
+    public function getDeletionSummary(User $user): JsonResponse
+    {
+        $summary = $this->userDeletionService->getDeletionSummary($user);
 
         return response()->json([
-            'message' => 'Пользователь успешно удален',
+            'summary' => $summary,
         ]);
     }
 

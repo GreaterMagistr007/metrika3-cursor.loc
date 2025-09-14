@@ -280,6 +280,16 @@
         </div>
       </div>
     </div>
+    
+    <!-- Модальное окно подтверждения удаления -->
+    <DeletionConfirmationModal
+      :show="showDeletionModal"
+      :user="selectedUser"
+      :summary="deletionSummary"
+      :loading="deletionLoading"
+      @close="closeModals"
+      @confirm="confirmDeletion"
+    />
   </div>
 </template>
 
@@ -290,6 +300,7 @@ import SearchInput from '../SearchInput.vue';
 import NameInput from '../NameInput.vue';
 import PhoneInput from '../PhoneInput.vue';
 import TextInput from '../TextInput.vue';
+import DeletionConfirmationModal from './DeletionConfirmationModal.vue';
 
 const users = ref([]);
 const loading = ref(false);
@@ -300,7 +311,10 @@ const pagination = ref(null);
 // Модальные окна
 const showViewModal = ref(false);
 const showEditModal = ref(false);
+const showDeletionModal = ref(false);
 const selectedUser = ref(null);
+const deletionSummary = ref(null);
+const deletionLoading = ref(false);
 const editForm = ref({
   name: '',
   phone: '',
@@ -389,7 +403,10 @@ const editUser = (user) => {
 const closeModals = () => {
   showViewModal.value = false;
   showEditModal.value = false;
+  showDeletionModal.value = false;
   selectedUser.value = null;
+  deletionSummary.value = null;
+  deletionLoading.value = false;
   editForm.value = {
     name: '',
     phone: '',
@@ -421,24 +438,55 @@ const saveUser = async () => {
 };
 
 const deleteUser = async (user) => {
-  if (confirm(`Вы уверены, что хотите удалить пользователя ${user.name || user.phone}?`)) {
-    try {
-      await axios.delete(`/users/${user.id}`);
-      await fetchUsers(pagination.value.current_page);
-      
-      // Показываем уведомление об успехе
-      if (window.showSuccessToast) {
-        window.showSuccessToast('Успешно!', 'Пользователь успешно удален');
-      }
-    } catch (error) {
-      console.error('Ошибка удаления пользователя:', error);
-      
-      // Показываем уведомление об ошибке
-      if (window.showErrorToast) {
-        const errorMessage = error.response?.data?.message || 'Произошла ошибка при удалении пользователя';
-        window.showErrorToast('Ошибка!', errorMessage);
-      }
+  try {
+    // Получаем информацию об удалении
+    const summaryResponse = await axios.get(`/users/${user.id}/deletion-summary`);
+    deletionSummary.value = summaryResponse.data.summary;
+    selectedUser.value = user;
+    showDeletionModal.value = true;
+  } catch (error) {
+    console.error('Ошибка получения информации об удалении:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при получении информации об удалении';
+      window.showErrorToast('Ошибка!', errorMessage);
     }
+  }
+};
+
+const confirmDeletion = async () => {
+  if (!selectedUser.value) return;
+  
+  deletionLoading.value = true;
+  
+  try {
+    await axios.delete(`/users/${selectedUser.value.id}`);
+    await fetchUsers(pagination.value.current_page);
+    
+    // Показываем уведомление об успехе с подробностями
+    if (window.showSuccessToast) {
+      let successMessage = 'Пользователь и все связанные данные успешно удалены';
+      if (deletionSummary.value?.total_cabinets > 0) {
+        successMessage += ` (удалено ${deletionSummary.value.total_cabinets} кабинетов)`;
+      }
+      if (deletionSummary.value?.total_affected_users > 0) {
+        successMessage += ` (уведомлено ${deletionSummary.value.total_affected_users} пользователей)`;
+      }
+      window.showSuccessToast('Успешно!', successMessage);
+    }
+    
+    closeModals();
+  } catch (error) {
+    console.error('Ошибка удаления пользователя:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при удалении пользователя';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
+  } finally {
+    deletionLoading.value = false;
   }
 };
 

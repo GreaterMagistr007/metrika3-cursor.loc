@@ -43,6 +43,7 @@ Route::prefix('api/admin')->middleware('auth:admin')->group(function () {
     Route::apiResource('users', AdminUserController::class)->middleware('admin');
     Route::get('users/{user}/cabinets', [AdminUserController::class, 'getUserCabinets'])->middleware('admin');
     Route::get('users/{user}/audit-logs', [AdminUserController::class, 'getUserAuditLogs'])->middleware('admin');
+    Route::get('users/{user}/deletion-summary', [AdminUserController::class, 'getDeletionSummary'])->middleware('admin');
 
     // Cabinets management
     Route::apiResource('cabinets', AdminCabinetController::class)->middleware('admin');
