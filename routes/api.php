@@ -1,8 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Admin\AuditLogController;
-use App\Http\Controllers\Api\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Api\MessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -62,21 +60,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/mark-all-read', [MessageController::class, 'markAllAsRead']);
     });
 
-    // Admin routes
-    Route::prefix('admin')->group(function () {
-        // Audit logs
-        Route::get('/audit-logs', [AuditLogController::class, 'index']);
-        Route::get('/audit-logs/statistics', [AuditLogController::class, 'statistics']);
-        Route::get('/audit-logs/recent', [AuditLogController::class, 'recent']);
-        
-        // Messages management
-        Route::get('/messages', [AdminMessageController::class, 'index']);
-        Route::post('/messages', [AdminMessageController::class, 'store']);
-        Route::get('/messages/{message}', [AdminMessageController::class, 'show']);
-        Route::put('/messages/{message}', [AdminMessageController::class, 'update']);
-        Route::delete('/messages/{message}', [AdminMessageController::class, 'destroy']);
-        Route::patch('/messages/{message}/toggle-active', [AdminMessageController::class, 'toggleActive']);
-        Route::get('/messages-statistics', [AdminMessageController::class, 'statistics']);
-        Route::get('/message-types', [AdminMessageController::class, 'types']);
-    });
 });

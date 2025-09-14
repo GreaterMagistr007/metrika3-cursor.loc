@@ -322,7 +322,8 @@ final class AuditLogTest extends TestCase
             'description' => 'Test audit event',
         ]);
 
-        $token = $this->user->createToken('test')->plainTextToken;
+        $admin = \App\Models\AdminUser::factory()->create();
+        $token = $admin->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
@@ -362,7 +363,8 @@ final class AuditLogTest extends TestCase
             'description' => 'Test event 2',
         ]);
 
-        $token = $this->user->createToken('test')->plainTextToken;
+        $admin = \App\Models\AdminUser::factory()->create();
+        $token = $admin->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
@@ -385,7 +387,8 @@ final class AuditLogTest extends TestCase
             'description' => 'Test audit event',
         ]);
 
-        $token = $this->user->createToken('test')->plainTextToken;
+        $admin = \App\Models\AdminUser::factory()->create();
+        $token = $admin->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
@@ -414,7 +417,8 @@ final class AuditLogTest extends TestCase
             'description' => 'Test audit event',
         ]);
 
-        $token = $this->user->createToken('test')->plainTextToken;
+        $admin = \App\Models\AdminUser::factory()->create();
+        $token = $admin->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,

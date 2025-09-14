@@ -64,6 +64,14 @@ final class User extends Authenticatable
     }
 
     /**
+     * Get the cabinet user relationships.
+     */
+    public function cabinetUsers(): HasMany
+    {
+        return $this->hasMany(CabinetUser::class);
+    }
+
+    /**
      * Get the cabinets owned by the user.
      */
     public function ownedCabinets(): HasMany

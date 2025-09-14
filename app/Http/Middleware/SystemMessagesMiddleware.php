@@ -27,6 +27,11 @@ final class SystemMessagesMiddleware
             return $response;
         }
 
+        // Skip for admin users
+        if ($request->user() instanceof \App\Models\AdminUser) {
+            return $response;
+        }
+
         try {
             // Process trigger conditions
             $this->messageService->processTriggers($request->user());

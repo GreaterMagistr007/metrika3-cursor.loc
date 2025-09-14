@@ -11,11 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            Route::middleware('api')
+                ->group(base_path('routes/admin.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'cabinet.permission' => \App\Http\Middleware\CheckCabinetPermission::class,
             'system.messages' => \App\Http\Middleware\SystemMessagesMiddleware::class,
+            'admin' => \App\Http\Middleware\CheckAdminPermission::class,
         ]);
         
         // Add system messages middleware to API routes

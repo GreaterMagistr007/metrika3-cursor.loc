@@ -20,4 +20,4 @@ Route::get('/', function () {
 
 Route::get('/{any}', function () {
     return view('main-app');
-})->where('any', '.*');
+})->where('any', '^(?!api|test_api_browser\.html).*');
