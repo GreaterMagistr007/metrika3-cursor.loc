@@ -71,6 +71,44 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
+         * Check if user exists by Telegram ID
+         */
+        async checkUserByTelegram(telegramId) {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const response = await api.post('/auth/check-user-by-telegram', {
+                    telegram_id: telegramId
+                });
+
+                if (response.data.user_exists) {
+                    // User exists - set auth data
+                    this.setAuthData(response.data.user, response.data.token);
+                    return {
+                        success: true,
+                        user_exists: true,
+                        message: response.data.message
+                    };
+                } else {
+                    return {
+                        success: true,
+                        user_exists: false,
+                        message: response.data.message
+                    };
+                }
+            } catch (error) {
+                this.error = this.getErrorMessage(error);
+                return {
+                    success: false,
+                    message: this.error
+                };
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        /**
          * Complete registration with OTP verification
          */
         async completeRegistration(phone, otp) {

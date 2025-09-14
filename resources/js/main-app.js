@@ -43,6 +43,12 @@ const routes = [
         component: () => import('./components/pages/Register.vue'),
         meta: { requiresGuest: true }
     },
+    { 
+        path: '/telegram-register', 
+        name: 'telegram-register', 
+        component: () => import('./components/pages/TelegramRegister.vue'),
+        meta: { requiresGuest: true }
+    },
 ];
 
 const router = createRouter({

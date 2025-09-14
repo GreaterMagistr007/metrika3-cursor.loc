@@ -75,9 +75,13 @@
       <div class="text-center">
         <p class="text-sm text-gray-600">
           Нет аккаунта? 
-          <router-link to="/register" class="font-medium text-blue-600 hover:text-blue-500">
-            Зарегистрироваться
-          </router-link>
+          <a 
+            href="https://t.me/M_150_site_bot" 
+            target="_blank" 
+            class="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Зарегистрироваться через Telegram
+          </a>
         </p>
       </div>
     </div>

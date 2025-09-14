@@ -1,20 +1,8 @@
 <?php
 
-require_once 'vendor/autoload.php';
+$botToken = '7396908423:AAFk3WRot3sy_fpUnii1Up0-M5e8Z7PlbkA';
 
-// Load Laravel environment
-$app = require_once 'bootstrap/app.php';
-$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-
-$botToken = env('TELEGRAM_BOT_TOKEN');
-
-if (empty($botToken)) {
-    echo "❌ TELEGRAM_BOT_TOKEN не настроен в .env файле\n";
-    exit(1);
-}
-
-echo "🤖 Получение вашего Telegram ID...\n";
-echo "📱 Bot Token: " . substr($botToken, 0, 10) . "...\n\n";
+echo "🤖 Получение Telegram ID через простой запрос...\n\n";
 
 echo "📋 Инструкция:\n";
 echo "1. Найдите бота @M_150_site_bot в Telegram\n";
@@ -25,7 +13,7 @@ echo "4. Нажмите Enter для проверки...\n\n";
 // Ждем нажатия Enter
 readline();
 
-echo "🔍 Проверяем обновления от бота...\n";
+echo "🔍 Проверяем обновления...\n";
 
 $url = "https://api.telegram.org/bot{$botToken}/getUpdates";
 $response = file_get_contents($url);
@@ -38,7 +26,6 @@ if ($data && $data['ok'] && !empty($data['result'])) {
     foreach ($data['result'] as $update) {
         if (isset($update['message'])) {
             $message = $update['message'];
-            $chat = $message['chat'];
             $user = $message['from'];
             
             echo "👤 Пользователь: " . $user['first_name'] . " " . ($user['last_name'] ?? '') . "\n";

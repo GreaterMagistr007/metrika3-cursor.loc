@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            width: 100%;
+        }
+        .button:hover {
+            opacity: 0.8;
+        }
+        .info {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Test Mini App</h1>
+        
+        <div class="info">
+            <h3>Информация о Telegram Web App:</h3>
+            <p><strong>Версия:</strong> <span id="version">-</span></p>
+            <p><strong>Платформа:</strong> <span id="platform">-</span></p>
+            <p><strong>Пользователь:</strong> <span id="user">-</span></p>
+            <p><strong>Telegram ID:</strong> <span id="telegramId">-</span></p>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <button class="button" onclick="openMainApp()">
+            🚀 Открыть основное приложение
+        </button>
+
+        <button class="button" onclick="getUserData()">
+            👤 Получить данные пользователя
+        </button>
+
+        <button class="button" onclick="showAlert()">
+            💬 Показать уведомление
+        </button>
+
+        <button class="button" onclick="closeApp()">
+            ❌ Закрыть приложение
+        </button>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        
+        // Расширяем приложение на весь экран
+        tg.expand();
+        
+        // Включаем кнопку закрытия
+        tg.enableClosingConfirmation();
+        
+        // Получаем данные пользователя
+        const user = tg.initDataUnsafe?.user;
+        
+        // Заполняем информацию
+        document.getElementById('version').textContent = tg.version || 'Неизвестно';
+        document.getElementById('platform').textContent = tg.platform || 'Неизвестно';
+        document.getElementById('user').textContent = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Неизвестно';
+        document.getElementById('telegramId').textContent = user ? user.id : 'Неизвестно';
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isError ? 'error' : 'success'}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        function openMainApp() {
+            const telegramId = user ? user.id : 123456789;
+            const url = `http://localhost:8000/telegram-register?telegram_id=${telegramId}`;
+            
+            // Открываем URL в том же окне
+            window.location.href = url;
+        }
+
+        function getUserData() {
+            if (user) {
+                const userInfo = `
+Имя: ${user.first_name} ${user.last_name || ''}
+Username: @${user.username || 'не указан'}
+ID: ${user.id}
+Язык: ${user.language_code || 'не указан'}
+                `;
+                showStatus(`Данные пользователя:\n${userInfo}`);
+            } else {
+                showStatus('Данные пользователя недоступны', true);
+            }
+        }
+
+        function showAlert() {
+            tg.showAlert('Это тестовое уведомление из Mini App!');
+        }
+
+        function closeApp() {
+            tg.close();
+        }
+
+        // Обработчики событий
+        tg.onEvent('mainButtonClicked', () => {
+            showStatus('Нажата главная кнопка!');
+        });
+
+        tg.onEvent('backButtonClicked', () => {
+            showStatus('Нажата кнопка назад!');
+        });
+
+        // Показываем статус при загрузке
+        showStatus('Mini App загружен успешно!');
+    </script>
+</body>
+</html>

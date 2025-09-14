@@ -242,6 +242,48 @@ final class AuthController extends Controller
     }
 
     /**
+     * Check if user exists by Telegram ID.
+     */
+    public function checkUserByTelegram(Request $request): JsonResponse
+    {
+        $telegramId = $request->input('telegram_id');
+
+        if (!$telegramId) {
+            return response()->json([
+                'message' => 'Telegram ID is required',
+                'error_code' => 'TELEGRAM_ID_REQUIRED'
+            ], 400);
+        }
+
+        $user = User::where('telegram_id', $telegramId)->first();
+
+        if ($user) {
+            // User exists - generate token and login
+            $token = $user->createToken('telegram-login')->plainTextToken;
+            
+            // Update last login
+            $user->update(['last_login_at' => now()]);
+
+            return response()->json([
+                'message' => 'User found and logged in successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'phone' => $user->phone,
+                    'telegram_id' => $user->telegram_id,
+                ],
+                'token' => $token,
+                'user_exists' => true
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'User not found',
+            'user_exists' => false
+        ]);
+    }
+
+    /**
      * Start registration process - check data availability and send OTP.
      */
     public function register(RegisterRequest $request): JsonResponse
