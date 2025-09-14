@@ -53,7 +53,16 @@ const maxLength = 18; // +7 (XXX) XXX-XX-XX
 
 // Очищаем номер от всех символов кроме цифр и +
 const cleanPhone = (value) => {
-  return value.replace(/[^\d+]/g, '');
+  // Убираем все символы кроме цифр и +
+  let cleaned = value.replace(/[^\d+]/g, '');
+  
+  // Если есть несколько +, оставляем только первый
+  if (cleaned.includes('+')) {
+    const plusIndex = cleaned.indexOf('+');
+    cleaned = '+' + cleaned.substring(plusIndex + 1).replace(/\+/g, '');
+  }
+  
+  return cleaned;
 };
 
 // Форматируем номер в красивый вид
@@ -77,6 +86,11 @@ const formatPhone = (value) => {
   // Ограничиваем длину (максимум 11 цифр после +7)
   if (phone.length > 12) { // +7 + 10 цифр
     phone = phone.substring(0, 12);
+  }
+  
+  // Если только +7, возвращаем как есть
+  if (phone === '+7') {
+    return '+7';
   }
   
   // Форматируем в красивый вид
@@ -138,7 +152,6 @@ const handleKeydown = (event) => {
 
 const handleInput = (event) => {
   const input = event.target;
-  const cursorPosition = input.selectionStart;
   
   // Получаем новое значение
   const newValue = event.target.value;
@@ -150,10 +163,9 @@ const handleInput = (event) => {
   // Обновляем значение
   emit('update:modelValue', cleaned);
   
-  // Восстанавливаем позицию курсора
+  // Устанавливаем курсор в конец строки
   nextTick(() => {
-    const newCursorPosition = Math.min(cursorPosition, formatted.length);
-    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    input.setSelectionRange(formatted.length, formatted.length);
   });
 };
 
@@ -180,10 +192,9 @@ const handlePaste = (event) => {
     
     emit('update:modelValue', cleaned);
     
-    // Устанавливаем курсор в конец вставленного текста
+    // Устанавливаем курсор в конец строки
     nextTick(() => {
-      const newPosition = start + cleanedData.length;
-      input.setSelectionRange(newPosition, newPosition);
+      input.setSelectionRange(formatted.length, formatted.length);
     });
   }
 };
