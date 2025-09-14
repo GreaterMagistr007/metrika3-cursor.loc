@@ -80,33 +80,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAdminAuthStore } from '../stores/useAdminAuthStore';
 
 const router = useRouter();
-const admin = ref(null);
-const isAuthenticated = ref(false);
+const adminAuthStore = useAdminAuthStore();
+
+const admin = computed(() => adminAuthStore.admin);
+const isAuthenticated = computed(() => adminAuthStore.isLoggedIn);
 
 const goToLogin = () => {
   router.push('/login');
 };
 
-const logout = () => {
-  // TODO: Реализовать logout
-  admin.value = null;
-  isAuthenticated.value = false;
+const logout = async () => {
+  await adminAuthStore.logout();
   router.push('/login');
 };
 
-onMounted(() => {
-  // TODO: Проверить аутентификацию
-  // Пока что для демонстрации - показываем форму входа
-  isAuthenticated.value = false;
-  
+onMounted(async () => {
   console.log('AdminPanel mounted, current route:', router.currentRoute.value);
   
+  // Проверяем аутентификацию
+  const isAuth = await adminAuthStore.checkAuth();
+  
   // Если не авторизован и не на странице входа, перенаправляем на страницу входа
-  if (!isAuthenticated.value && router.currentRoute.value.name !== 'admin-login') {
+  if (!isAuth && router.currentRoute.value.name !== 'admin-login') {
     console.log('Redirecting to login');
     router.push('/login');
   }

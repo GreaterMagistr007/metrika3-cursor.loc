@@ -241,12 +241,10 @@ final class AuditTest extends TestCase
 
         $response = $this->postJson('/api/auth/register', $userData);
 
-        $response->assertStatus(201);
+        $response->assertStatus(200);
 
-        $user = User::where('phone', '+79999999999')->first();
-        
-        // Check that user was created
-        $this->assertDatabaseHas('users', [
+        // Check that user was NOT created yet (only after OTP verification)
+        $this->assertDatabaseMissing('users', [
             'phone' => '+79999999999',
             'name' => 'Test User'
         ]);

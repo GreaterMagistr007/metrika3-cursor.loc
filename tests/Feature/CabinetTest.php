@@ -94,12 +94,12 @@ final class CabinetTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'cabinets' => [
+                'data' => [
                     '*' => ['id', 'name', 'description', 'owner', 'users_count']
                 ]
             ]);
 
-        $this->assertCount(2, $response->json('cabinets'));
+        $this->assertCount(2, $response->json('data'));
     }
 
     /** @test */
@@ -121,7 +121,7 @@ final class CabinetTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'cabinet' => ['id', 'name', 'description', 'owner'],
+                'data' => ['id', 'name', 'description', 'owner'],
                 'users' => [
                     '*' => ['id', 'cabinet_id', 'user_id', 'role', 'is_owner', 'user', 'permissions']
                 ]

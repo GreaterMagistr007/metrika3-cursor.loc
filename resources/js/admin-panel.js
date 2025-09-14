@@ -27,6 +27,8 @@ const router = createRouter({
     routes,
 });
 
+// Настройка axios для админ-панели уже выполнена в adminAxios.js
+
 // Создание приложения
 const app = createApp(App);
 app.use(createPinia());

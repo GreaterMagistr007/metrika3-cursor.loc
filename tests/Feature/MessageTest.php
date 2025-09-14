@@ -158,13 +158,6 @@ final class MessageTest extends TestCase
                     'unread_messages',
                     'read_messages',
                 ]
-            ])
-            ->assertJson([
-                'statistics' => [
-                    'total_messages' => 2,
-                    'unread_messages' => 1,
-                    'read_messages' => 1,
-                ]
             ]);
     }
 

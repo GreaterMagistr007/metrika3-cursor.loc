@@ -27,23 +27,22 @@ final class AuthTest extends TestCase
     {
         $userData = [
             'name' => 'Test User',
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'telegram_id' => 123456789,
             'telegram_data' => ['id' => 123456789, 'first_name' => 'Test']
         ];
 
         $response = $this->postJson('/api/auth/register', $userData);
 
-        $response->assertStatus(201)
+        $response->assertStatus(200)
             ->assertJsonStructure([
                 'message',
-                'user' => ['id', 'name', 'phone', 'telegram_id'],
-                'otp_sent',
                 'expires_in'
             ]);
 
-        $this->assertDatabaseHas('users', [
-            'phone' => '+1234567890',
+        // User is not created immediately - only after OTP verification
+        $this->assertDatabaseMissing('users', [
+            'phone' => '+71234567890',
             'name' => 'Test User',
             'telegram_id' => 123456789
         ]);
@@ -67,11 +66,11 @@ final class AuthTest extends TestCase
     /** @test */
     public function registration_fails_with_duplicate_phone(): void
     {
-        User::factory()->create(['phone' => '+1234567890']);
+        User::factory()->create(['phone' => '+71234567890']);
 
         $userData = [
             'name' => 'Test User',
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'telegram_id' => 123456789
         ];
 
@@ -85,12 +84,12 @@ final class AuthTest extends TestCase
     public function user_can_request_otp_with_phone(): void
     {
         $user = User::factory()->create([
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'phone_verified_at' => now()
         ]);
 
         $response = $this->postJson('/api/auth/request-otp', [
-            'phone' => '+1234567890'
+            'phone' => '+71234567890'
         ]);
 
         $response->assertStatus(200)
@@ -104,7 +103,7 @@ final class AuthTest extends TestCase
     public function request_otp_fails_with_invalid_phone(): void
     {
         $response = $this->postJson('/api/auth/request-otp', [
-            'phone' => '+9999999999'
+            'phone' => '+79999999999'
         ]);
 
         $response->assertStatus(404)
@@ -118,16 +117,16 @@ final class AuthTest extends TestCase
     public function user_can_verify_otp(): void
     {
         $user = User::factory()->create([
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'phone_verified_at' => null
         ]);
 
         // Simulate OTP in cache
         $otp = '123456';
-        Cache::put('auth_otp:+1234567890', $otp, 300);
+        Cache::put('auth_otp:+71234567890', $otp, 300);
 
         $response = $this->postJson('/api/auth/verify-otp', [
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'otp' => $otp
         ]);
 
@@ -148,12 +147,12 @@ final class AuthTest extends TestCase
     public function otp_verification_fails_with_invalid_otp(): void
     {
         $user = User::factory()->create([
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'phone_verified_at' => null
         ]);
 
         $response = $this->postJson('/api/auth/verify-otp', [
-            'phone' => '+1234567890',
+            'phone' => '+71234567890',
             'otp' => '000000'
         ]);
 
