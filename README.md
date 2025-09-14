@@ -100,6 +100,19 @@ php artisan telegram:check --offset=12345
 */5 * * * * cd /path/to/project && php artisan telegram:check >> /dev/null 2>&1
 ```
 
+### Утилиты для разработки
+
+```bash
+# Получить информацию о Telegram боте
+php artisan telegram:info
+
+# Создать тестового пользователя
+php artisan test:create-user
+
+# Создать тестового пользователя с кастомными данными
+php artisan test:create-user --phone=+79998887766 --name="Test User" --telegram-id=123456789
+```
+
 ### Настройка Telegram Bot
 
 1. **Создание бота через @BotFather**
