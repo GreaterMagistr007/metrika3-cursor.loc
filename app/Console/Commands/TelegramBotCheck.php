@@ -96,7 +96,7 @@ class TelegramBotCheck extends Command
 
                     $this->info("Saved message from user {$userId} ({$firstName} {$lastName}): {$text}");
 
-                    if ($text === '/start') {
+                    if ($text) {
                         $this->processStartCommand($chatId, $userId, $firstName, $lastName, $username);
                         $processedCount++;
 
