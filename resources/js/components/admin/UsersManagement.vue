@@ -10,13 +10,12 @@
       <div class="px-4 py-5 sm:p-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="search" class="block text-sm font-medium text-gray-700">Поиск</label>
-            <input
+            <SearchInput
               id="search"
               v-model="searchQuery"
-              type="text"
               placeholder="Поиск по имени или телефону..."
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              @search="handleSearch"
+              @clear="handleClearSearch"
             />
           </div>
           <div>
@@ -236,34 +235,28 @@
           
           <form @submit.prevent="saveUser" class="space-y-4">
             <div>
-              <label for="edit-name" class="block text-sm font-medium text-gray-700">Имя</label>
-              <input
+              <NameInput
                 id="edit-name"
                 v-model="editForm.name"
-                type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                label="Имя"
                 placeholder="Введите имя"
+                required
               />
             </div>
             
             <div>
-              <label for="edit-phone" class="block text-sm font-medium text-gray-700">Телефон</label>
-              <input
+              <PhoneInput
                 id="edit-phone"
                 v-model="editForm.phone"
-                type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="+7 (XXX) XXX-XX-XX"
               />
             </div>
             
             <div>
-              <label for="edit-telegram" class="block text-sm font-medium text-gray-700">Telegram ID</label>
-              <input
+              <TextInput
                 id="edit-telegram"
                 v-model="editForm.telegram_id"
-                type="text"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                label="Telegram ID"
                 placeholder="Введите Telegram ID"
               />
             </div>
@@ -293,6 +286,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from '../../api/adminAxios';
+import SearchInput from '../SearchInput.vue';
+import NameInput from '../NameInput.vue';
+import PhoneInput from '../PhoneInput.vue';
+import TextInput from '../TextInput.vue';
 
 const users = ref([]);
 const loading = ref(false);
@@ -363,6 +360,15 @@ const changePage = (page) => {
   if (page >= 1 && page <= pagination.value.last_page) {
     fetchUsers(page);
   }
+};
+
+const handleSearch = () => {
+  fetchUsers(1);
+};
+
+const handleClearSearch = () => {
+  searchQuery.value = '';
+  fetchUsers(1);
 };
 
 const viewUser = (user) => {

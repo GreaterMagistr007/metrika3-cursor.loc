@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useMessageStore } from '../stores/useMessageStore.js';
 
 const messageStore = useMessageStore();
@@ -118,6 +118,21 @@ const getToastClasses = (type) => {
 const removeToast = (id) => {
   messageStore.removeToast(id);
 };
+
+// Глобальные функции для админ-панели
+const showSuccessToast = (title, message, duration = 5000) => {
+  messageStore.showToast(`${title}: ${message}`, 'success', duration);
+};
+
+const showErrorToast = (title, message, duration = 5000) => {
+  messageStore.showToast(`${title}: ${message}`, 'error', duration);
+};
+
+onMounted(() => {
+  // Регистрируем глобальные функции для админ-панели
+  window.showSuccessToast = showSuccessToast;
+  window.showErrorToast = showErrorToast;
+});
 </script>
 
 <style scoped>

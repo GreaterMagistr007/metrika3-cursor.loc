@@ -10,13 +10,12 @@
       <div class="px-4 py-5 sm:p-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label for="user" class="block text-sm font-medium text-gray-700">Пользователь</label>
-            <input
+            <SearchInput
               id="user"
               v-model="filters.user"
-              type="text"
               placeholder="Поиск по пользователю..."
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              @search="handleSearch"
+              @clear="handleClearUserSearch"
             />
           </div>
           <div>
@@ -37,21 +36,19 @@
             </select>
           </div>
           <div>
-            <label for="date_from" class="block text-sm font-medium text-gray-700">Дата с</label>
-            <input
+            <DateInput
               id="date_from"
               v-model="filters.date_from"
+              label="Дата с"
               type="date"
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
           <div>
-            <label for="date_to" class="block text-sm font-medium text-gray-700">Дата до</label>
-            <input
+            <DateInput
               id="date_to"
               v-model="filters.date_to"
+              label="Дата до"
               type="date"
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
         </div>
@@ -191,6 +188,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from '../../api/adminAxios';
+import SearchInput from '../SearchInput.vue';
+import DateInput from '../DateInput.vue';
 
 const logs = ref([]);
 const loading = ref(false);
@@ -255,6 +254,15 @@ const fetchLogs = async (page = 1) => {
 };
 
 const applyFilters = () => {
+  fetchLogs(1);
+};
+
+const handleSearch = () => {
+  fetchLogs(1);
+};
+
+const handleClearUserSearch = () => {
+  filters.value.user = '';
   fetchLogs(1);
 };
 

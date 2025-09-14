@@ -103,13 +103,12 @@
       <div class="px-4 py-5 sm:p-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="search" class="block text-sm font-medium text-gray-700">Поиск</label>
-            <input
+            <SearchInput
               id="search"
               v-model="searchQuery"
-              type="text"
               placeholder="Поиск по тексту сообщения..."
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              @search="handleSearch"
+              @clear="handleClearSearch"
             />
           </div>
           <div>
@@ -303,6 +302,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from '../../api/adminAxios';
+import SearchInput from '../SearchInput.vue';
 
 const messages = ref([]);
 const statistics = ref({});
@@ -373,6 +373,15 @@ const changePage = (page) => {
   if (page >= 1 && page <= pagination.value.last_page) {
     fetchMessages(page);
   }
+};
+
+const handleSearch = () => {
+  fetchMessages(1);
+};
+
+const handleClearSearch = () => {
+  searchQuery.value = '';
+  fetchMessages(1);
 };
 
 const getTypeColor = (type) => {
