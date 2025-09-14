@@ -10,6 +10,7 @@
       :placeholder="placeholder"
       :class="inputClass"
       :maxlength="maxLength"
+      :disabled="disabled"
       type="tel"
     />
     <div v-if="error" class="mt-1 text-sm text-red-600">{{ error }}</div>
@@ -39,6 +40,10 @@ const props = defineProps({
   error: {
     type: String,
     default: ''
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 });
 

@@ -13,14 +13,11 @@
       <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
         <div>
           <label for="phone" class="sr-only">Номер телефона</label>
-          <input
+          <PhoneInput
             id="phone"
             v-model="phone"
-            name="phone"
-            type="tel"
-            required
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            placeholder="+7 (XXX) XXX-XX-XX"
+            :error="phoneError"
+            :input-class="'appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'"
             :disabled="loading"
           />
         </div>
@@ -41,7 +38,7 @@
         <div>
           <button
             type="submit"
-            :disabled="loading || !phone"
+            :disabled="loading || !isValidPhone"
             class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="loading" class="absolute left-0 inset-y-0 flex items-center pl-3">
@@ -68,9 +65,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAdminAuthStore } from '../../stores/useAdminAuthStore';
+import PhoneInput from '../PhoneInput.vue';
 
 const router = useRouter();
 const adminAuthStore = useAdminAuthStore();
@@ -78,12 +76,31 @@ const adminAuthStore = useAdminAuthStore();
 const phone = ref('');
 const loading = ref(false);
 const error = ref('');
+const phoneError = ref('');
+
+// Валидация номера телефона
+const isValidPhone = computed(() => {
+  const cleanPhone = phone.value.replace(/[^\d+]/g, '');
+  return cleanPhone.length === 12 && cleanPhone.startsWith('+7');
+});
 
 const handleLogin = async () => {
-  if (!phone.value) return;
+  // Очищаем предыдущие ошибки
+  error.value = '';
+  phoneError.value = '';
+  
+  // Валидация номера телефона
+  if (!phone.value) {
+    phoneError.value = 'Введите номер телефона';
+    return;
+  }
+  
+  if (!isValidPhone.value) {
+    phoneError.value = 'Введите корректный номер телефона';
+    return;
+  }
   
   loading.value = true;
-  error.value = '';
   
   try {
     const result = await adminAuthStore.login(phone.value);
