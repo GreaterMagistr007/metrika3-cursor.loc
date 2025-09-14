@@ -156,20 +156,27 @@ class TelegramBotCheck extends Command
             // Check if user already exists
             $user = User::where('telegram_id', $userId)->first();
 
+            // Generate URL for inline button
+            $url = $this->generateTelegramUrl($userId);
+
             if ($user) {
                 // User exists - send welcome back message
-                $url = "{$this->appUrl}/telegram-register?telegram_id={$userId}";
                 $message = "👋 Добро пожаловать обратно, {$firstName}!\n\n" .
                     "Вы уже зарегистрированы в системе.\n" .
-                    "Для входа в приложение нажмите на ссылку ниже:\n\n" .
-                    "🔗 <a href=\"{$url}\">Войти в приложение</a>";
+                    "Для входа в приложение нажмите на кнопку ниже:";
 
-                $message = "👋 Добро пожаловать обратно, {$firstName}!<br><br>" .
-                    "Вы уже зарегистрированы в системе.<br>" .
-                    "Для входа в приложение нажмите на ссылку ниже:<br><br>" .
-                    "🔗 <a href='{$url}'>Войти в приложение</a>";
+                $replyMarkup = [
+                    'inline_keyboard' => [
+                        [
+                            [
+                                'text' => '🔗 Войти в приложение',
+                                'url' => $url
+                            ]
+                        ]
+                    ]
+                ];
 
-                $this->sendMessage($chatId, $message);
+                $this->sendMessage($chatId, $message, $replyMarkup);
 
                 $this->info("User {$userId} already exists - sent welcome back message");
             } else {
@@ -184,16 +191,24 @@ class TelegramBotCheck extends Command
 
                 $this->info("Created new user with ID: {$user->id}, Telegram ID: {$userId}");
 
-                $url = "{$this->appUrl}/telegram-register?telegram_id={$userId}";
-
                 // Send registration message
                 $message = "🎉 Добро пожаловать в Metrika3 Cabinet, {$firstName}!\n\n" .
                     "Вы успешно зарегистрированы в системе.\n" .
-                    "Для входа в приложение нажмите на ссылку ниже:\n\n" .
-                    "🔗 <a href=\"{$url}\">Войти в приложение</a>\n\n" .
+                    "Для входа в приложение нажмите на кнопку ниже:\n\n" .
                     "После входа вам будет предложено заполнить профиль.";
 
-                $this->sendMessage($chatId, $message);
+                $replyMarkup = [
+                    'inline_keyboard' => [
+                        [
+                            [
+                                'text' => '🔗 Войти в приложение',
+                                'url' => $url
+                            ]
+                        ]
+                    ]
+                ];
+
+                $this->sendMessage($chatId, $message, $replyMarkup);
 
                 $this->info("Sent registration message to user {$userId}");
             }
@@ -208,17 +223,40 @@ class TelegramBotCheck extends Command
         }
     }
 
+    /**
+     * Generate URL for Telegram inline button
+     * Uses public URL if localhost is detected
+     */
+    private function generateTelegramUrl($userId)
+    {
+        $baseUrl = $this->appUrl;
+        
+        // Check if it's localhost and replace with public URL
+        if (strpos($baseUrl, 'localhost') !== false || strpos($baseUrl, '127.0.0.1') !== false) {
+            // For local development, use a public URL
+            $baseUrl = 'https://metrika3-cursor.loc';
+        }
+        
+        return "{$baseUrl}/telegram-register?telegram_id={$userId}";
+    }
+
 
     /**
      * Send message to Telegram chat
      */
-    private function sendMessage($chatId, $text)
+    private function sendMessage($chatId, $text, $replyMarkup = null)
     {
-        $response = Http::timeout(10)->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
+        $data = [
             'chat_id' => $chatId,
             'text' => $text,
             'parse_mode' => 'HTML'
-        ]);
+        ];
+
+        if ($replyMarkup) {
+            $data['reply_markup'] = $replyMarkup;
+        }
+
+        $response = Http::timeout(10)->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $data);
 
         if (!$response->successful()) {
             throw new \Exception('Failed to send message: ' . $response->body());
