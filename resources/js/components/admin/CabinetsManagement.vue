@@ -187,6 +187,117 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно просмотра кабинета -->
+    <div v-if="showViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Информация о кабинете</h3>
+            <button @click="closeModals" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <div v-if="selectedCabinet" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Название</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedCabinet.name }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Описание</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedCabinet.description || 'Не указано' }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Владелец</label>
+              <p class="mt-1 text-sm text-gray-900">
+                {{ selectedCabinet.owner?.name || 'Неизвестно' }} 
+                ({{ selectedCabinet.owner?.phone || 'Нет телефона' }})
+              </p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Статус</label>
+              <span :class="[
+                'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                selectedCabinet.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              ]">
+                {{ selectedCabinet.is_active ? 'Активен' : 'Неактивен' }}
+              </span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Пользователей</label>
+              <p class="mt-1 text-sm text-gray-900">{{ selectedCabinet.users_count || 0 }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Создан</label>
+              <p class="mt-1 text-sm text-gray-900">{{ formatDate(selectedCabinet.created_at) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно редактирования кабинета -->
+    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Редактирование кабинета</h3>
+            <button @click="closeModals" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <form @submit.prevent="saveCabinet" class="space-y-4">
+            <div>
+              <label for="edit-name" class="block text-sm font-medium text-gray-700">Название</label>
+              <input
+                id="edit-name"
+                v-model="editForm.name"
+                type="text"
+                required
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+            
+            <div>
+              <label for="edit-description" class="block text-sm font-medium text-gray-700">Описание</label>
+              <textarea
+                id="edit-description"
+                v-model="editForm.description"
+                rows="3"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              ></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button
+                type="button"
+                @click="closeModals"
+                class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+              >
+                Сохранить
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -200,6 +311,15 @@ const loading = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const pagination = ref(null);
+
+// Модальные окна
+const showViewModal = ref(false);
+const showEditModal = ref(false);
+const selectedCabinet = ref(null);
+const editForm = ref({
+  name: '',
+  description: ''
+});
 
 const visiblePages = computed(() => {
   if (!pagination.value) return [];
@@ -235,8 +355,8 @@ const fetchCabinets = async (page = 1) => {
     }
     
     const response = await axios.get(`/cabinets?${params}`);
-    cabinets.value = response.data.data;
-    pagination.value = response.data.meta;
+    cabinets.value = response.data.cabinets || [];
+    pagination.value = response.data.pagination || {};
   } catch (error) {
     console.error('Ошибка загрузки кабинетов:', error);
     
@@ -266,13 +386,50 @@ const handleClearSearch = () => {
 };
 
 const viewCabinet = (cabinet) => {
-  // TODO: Реализовать просмотр кабинета
-  console.log('View cabinet:', cabinet);
+  selectedCabinet.value = cabinet;
+  showViewModal.value = true;
 };
 
 const editCabinet = (cabinet) => {
-  // TODO: Реализовать редактирование кабинета
-  console.log('Edit cabinet:', cabinet);
+  selectedCabinet.value = cabinet;
+  editForm.value = {
+    name: cabinet.name,
+    description: cabinet.description || ''
+  };
+  showEditModal.value = true;
+};
+
+const closeModals = () => {
+  showViewModal.value = false;
+  showEditModal.value = false;
+  selectedCabinet.value = null;
+  editForm.value = {
+    name: '',
+    description: ''
+  };
+};
+
+const saveCabinet = async () => {
+  if (!selectedCabinet.value) return;
+  
+  try {
+    await axios.put(`/cabinets/${selectedCabinet.value.id}`, editForm.value);
+    await fetchCabinets(pagination.value.current_page);
+    closeModals();
+    
+    // Показываем уведомление об успехе
+    if (window.showSuccessToast) {
+      window.showSuccessToast('Успешно!', 'Кабинет успешно обновлен');
+    }
+  } catch (error) {
+    console.error('Ошибка сохранения кабинета:', error);
+    
+    // Показываем уведомление об ошибке
+    if (window.showErrorToast) {
+      const errorMessage = error.response?.data?.message || 'Произошла ошибка при обновлении кабинета';
+      window.showErrorToast('Ошибка!', errorMessage);
+    }
+  }
 };
 
 const toggleCabinetStatus = async (cabinet) => {

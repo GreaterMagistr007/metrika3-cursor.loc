@@ -163,6 +163,19 @@ final class CabinetController extends Controller
     }
 
     /**
+     * Toggle cabinet status.
+     */
+    public function toggleStatus(Cabinet $cabinet): JsonResponse
+    {
+        $cabinet->update(['is_active' => !$cabinet->is_active]);
+
+        return response()->json([
+            'message' => 'Статус кабинета успешно изменен',
+            'cabinet' => new CabinetResource($cabinet->fresh()),
+        ]);
+    }
+
+    /**
      * Transfer cabinet ownership.
      */
     public function transferOwnership(Request $request, Cabinet $cabinet): JsonResponse

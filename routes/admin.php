@@ -49,6 +49,7 @@ Route::prefix('api/admin')->middleware('auth:admin')->group(function () {
     Route::apiResource('cabinets', AdminCabinetController::class)->middleware('admin');
     Route::get('cabinets/{cabinet}/users', [AdminCabinetController::class, 'getCabinetUsers'])->middleware('admin');
     Route::get('cabinets/{cabinet}/audit-logs', [AdminCabinetController::class, 'getCabinetAuditLogs'])->middleware('admin');
+    Route::patch('cabinets/{cabinet}/toggle-status', [AdminCabinetController::class, 'toggleStatus'])->middleware('admin');
     Route::post('cabinets/{cabinet}/transfer-ownership', [AdminCabinetController::class, 'transferOwnership'])->middleware('admin');
 
     // Audit logs

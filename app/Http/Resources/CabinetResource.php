@@ -18,11 +18,12 @@ final class CabinetResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
-            'owner' => [
-                'id' => $this->owner->id,
-                'name' => $this->owner->name,
-                'phone' => $this->owner->phone,
-            ],
+            'is_active' => $this->is_active,
+            'owner' => $this->when($this->owner, [
+                'id' => $this->owner?->id,
+                'name' => $this->owner?->name,
+                'phone' => $this->owner?->phone,
+            ], null),
             'users_count' => $this->whenLoaded('cabinetUsers', function () {
                 return $this->cabinetUsers->count();
             }, 0),
