@@ -45,7 +45,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
-         * Register new user
+         * Start registration process (send OTP)
          */
         async register(userData) {
             this.loading = true;
@@ -57,9 +57,40 @@ export const useAuthStore = defineStore('auth', {
                 return {
                     success: true,
                     message: response.data.message,
-                    user: response.data.user,
-                    otp_sent: response.data.otp_sent,
                     expires_in: response.data.expires_in
+                };
+            } catch (error) {
+                this.error = this.getErrorMessage(error);
+                return {
+                    success: false,
+                    message: this.error
+                };
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        /**
+         * Complete registration with OTP verification
+         */
+        async completeRegistration(phone, otp) {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const response = await api.post('/auth/complete-registration', {
+                    phone: phone,
+                    otp: otp
+                });
+
+                const { user, token } = response.data;
+
+                // Store authentication data
+                this.setAuthData(user, token);
+
+                return {
+                    success: true,
+                    message: response.data.message
                 };
             } catch (error) {
                 this.error = this.getErrorMessage(error);
@@ -309,10 +340,16 @@ export const useAuthStore = defineStore('auth', {
                         return 'Необходимо указать номер телефона.';
                     case 'INVALID_TELEGRAM_DATA':
                         return 'Неверные данные Telegram.';
-                    case 'REGISTRATION_FAILED':
-                        return 'Ошибка регистрации. Проверьте введенные данные.';
-                    case 'REGISTRATION_ERROR':
-                        return 'Ошибка регистрации. Попробуйте позже.';
+                    case 'USER_EXISTS':
+                        return 'Пользователь с таким номером телефона уже существует.';
+                    case 'TELEGRAM_ID_EXISTS':
+                        return 'Пользователь с таким Telegram ID уже существует.';
+                    case 'REGISTRATION_START_ERROR':
+                        return 'Ошибка начала регистрации. Попробуйте позже.';
+                    case 'REGISTRATION_DATA_NOT_FOUND':
+                        return 'Данные регистрации не найдены. Начните регистрацию заново.';
+                    case 'REGISTRATION_COMPLETION_ERROR':
+                        return 'Ошибка завершения регистрации. Попробуйте позже.';
                     default:
                         return 'Произошла ошибка. Попробуйте позже.';
                 }

@@ -11,7 +11,7 @@
       </div>
       
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
-        <div class="rounded-md shadow-sm -space-y-px">
+        <div v-if="!showOtpInput" class="rounded-md shadow-sm -space-y-px">
           <!-- Name field -->
           <div>
             <label for="name" class="sr-only">Имя</label>
@@ -51,6 +51,35 @@
               placeholder="Telegram ID (необязательно)"
               :disabled="authStore.loading"
             />
+          </div>
+        </div>
+
+        <!-- OTP Input Section -->
+        <div v-if="showOtpInput">
+          <label for="otp" class="sr-only">Код подтверждения</label>
+          <input
+            id="otp"
+            v-model="otp"
+            name="otp"
+            type="text"
+            required
+            maxlength="6"
+            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            placeholder="Введите код из Telegram"
+            :disabled="authStore.loading"
+          />
+          <div v-if="timeLeft > 0" class="mt-2 text-sm text-gray-600 text-center">
+            Код действителен еще: {{ formatTime(timeLeft) }}
+          </div>
+          <div v-else class="mt-2 text-center">
+            <button
+              type="button"
+              @click="resendOtp"
+              class="text-sm text-indigo-600 hover:text-indigo-500"
+              :disabled="authStore.loading"
+            >
+              Отправить код повторно
+            </button>
           </div>
         </div>
 
@@ -99,7 +128,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </span>
-            {{ authStore.loading ? 'Регистрация...' : 'Зарегистрироваться' }}
+            {{ getButtonText() }}
           </button>
         </div>
 
@@ -137,12 +166,20 @@ const form = ref({
 const error = ref('')
 const successMessage = ref('')
 const phoneError = ref('')
+const showOtpInput = ref(false)
+const otp = ref('')
+const otpTimer = ref(null)
+const timeLeft = ref(0)
 
 // Computed
 const isFormValid = computed(() => {
-  return form.value.name.trim().length >= 2 && 
-         form.value.phone.length === 12 && 
-         form.value.phone.startsWith('+7')
+  if (!showOtpInput.value) {
+    return form.value.name.trim().length >= 2 && 
+           form.value.phone.length === 12 && 
+           form.value.phone.startsWith('+7')
+  } else {
+    return otp.value.length === 6
+  }
 })
 
 // Methods
@@ -151,48 +188,95 @@ const handleSubmit = async () => {
   successMessage.value = ''
   phoneError.value = ''
 
-  // Validate form
-  if (!isFormValid.value) {
-    if (form.value.name.trim().length < 2) {
-      error.value = 'Имя должно содержать минимум 2 символа'
-    } else if (form.value.phone.length !== 12 || !form.value.phone.startsWith('+7')) {
-      phoneError.value = 'Номер телефона должен быть в формате +7XXXXXXXXXX'
-    } else {
-      error.value = 'Пожалуйста, заполните все обязательные поля'
+  if (!showOtpInput.value) {
+    // First step: Start registration
+    if (!isFormValid.value) {
+      if (form.value.name.trim().length < 2) {
+        error.value = 'Имя должно содержать минимум 2 символа'
+      } else if (form.value.phone.length !== 12 || !form.value.phone.startsWith('+7')) {
+        phoneError.value = 'Номер телефона должен быть в формате +7XXXXXXXXXX'
+      } else {
+        error.value = 'Пожалуйста, заполните все обязательные поля'
+      }
+      return
     }
-    return
-  }
 
-  // Prepare registration data
+    // Prepare registration data
+    const registrationData = {
+      name: form.value.name.trim(),
+      phone: form.value.phone,
+      telegram_id: form.value.telegram_id ? parseInt(form.value.telegram_id) : null
+    }
+
+    // Call registration API
+    const result = await authStore.register(registrationData)
+
+    if (result.success) {
+      successMessage.value = result.message
+      showOtpInput.value = true
+      startOtpTimer()
+    } else {
+      error.value = result.message
+    }
+  } else {
+    // Second step: Complete registration with OTP
+    if (!isFormValid.value) {
+      error.value = 'Введите 6-значный код подтверждения'
+      return
+    }
+
+    // Complete registration
+    const result = await authStore.completeRegistration(form.value.phone, otp.value)
+
+    if (result.success) {
+      successMessage.value = result.message
+      // User is now logged in, redirect to dashboard
+      setTimeout(() => {
+        router.push('/')
+      }, 2000)
+    } else {
+      error.value = result.message
+    }
+  }
+}
+
+const getButtonText = () => {
+  if (authStore.loading) {
+    return showOtpInput.value ? 'Завершение регистрации...' : 'Отправка кода...'
+  }
+  return showOtpInput.value ? 'Завершить регистрацию' : 'Получить код'
+}
+
+const startOtpTimer = () => {
+  timeLeft.value = 300 // 5 minutes
+  otpTimer.value = setInterval(() => {
+    timeLeft.value--
+    if (timeLeft.value <= 0) {
+      clearInterval(otpTimer.value)
+      otpTimer.value = null
+    }
+  }, 1000)
+}
+
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+const resendOtp = async () => {
+  if (timeLeft.value > 0) return
+  
   const registrationData = {
     name: form.value.name.trim(),
     phone: form.value.phone,
     telegram_id: form.value.telegram_id ? parseInt(form.value.telegram_id) : null
   }
 
-  // Call registration API
   const result = await authStore.register(registrationData)
-
   if (result.success) {
     successMessage.value = result.message
-    
-    // If OTP was sent, redirect to login with phone pre-filled
-    if (result.otp_sent) {
-      setTimeout(() => {
-        router.push({
-          name: 'login',
-          query: { phone: form.value.phone, message: 'Код подтверждения отправлен в Telegram' }
-        })
-      }, 2000)
-    } else {
-      // If no OTP sent, redirect to login
-      setTimeout(() => {
-        router.push({
-          name: 'login',
-          query: { phone: form.value.phone }
-        })
-      }, 2000)
-    }
+    startOtpTimer()
   } else {
     error.value = result.message
   }

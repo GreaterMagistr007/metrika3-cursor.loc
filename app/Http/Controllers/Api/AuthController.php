@@ -242,41 +242,129 @@ final class AuthController extends Controller
     }
 
     /**
-     * Register a new user.
+     * Start registration process - check data availability and send OTP.
      */
     public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            $result = $this->authService->registerUser($request->validated());
+            $data = $request->validated();
+            $phone = $data['phone'];
+            $name = $data['name'];
+            $telegramId = $data['telegram_id'] ?? null;
 
-            if ($result['success']) {
+            // Check if user already exists
+            $existingUser = User::where('phone', $phone)->first();
+            if ($existingUser) {
                 return response()->json([
-                    'message' => $result['message'],
-                    'user' => [
-                        'id' => $result['user']->id,
-                        'name' => $result['user']->name,
-                        'phone' => $result['user']->phone,
-                        'telegram_id' => $result['user']->telegram_id,
-                    ],
-                    'otp_sent' => $result['otp_sent'],
-                    'expires_in' => $result['expires_in']
-                ], 201);
-            } else {
-                return response()->json([
-                    'message' => $result['message'],
-                    'error_code' => 'REGISTRATION_FAILED'
-                ], 400);
+                    'message' => 'Пользователь с таким номером телефона уже существует',
+                    'error_code' => 'USER_EXISTS'
+                ], 409);
             }
 
+            // Check telegram_id if provided
+            if ($telegramId) {
+                $existingTelegramUser = User::where('telegram_id', $telegramId)->first();
+                if ($existingTelegramUser) {
+                    return response()->json([
+                        'message' => 'Пользователь с таким Telegram ID уже существует',
+                        'error_code' => 'TELEGRAM_ID_EXISTS'
+                    ], 409);
+                }
+            }
+
+            // Generate and send OTP
+            $otp = $this->authService->generateAndSendOtp($phone, $telegramId);
+
+            // Store registration data temporarily in cache
+            Cache::put("registration_data:{$phone}", [
+                'name' => $name,
+                'phone' => $phone,
+                'telegram_id' => $telegramId,
+                'created_at' => now()
+            ], 600); // 10 minutes
+
+            return response()->json([
+                'message' => 'Код подтверждения отправлен в Telegram. Введите код для завершения регистрации.',
+                'expires_in' => 300 // 5 minutes
+            ]);
+
         } catch (\Exception $e) {
-            Log::error('Registration failed', [
+            Log::error('Registration start failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->validated()
             ]);
 
             return response()->json([
-                'message' => 'Ошибка регистрации. Попробуйте позже.',
-                'error_code' => 'REGISTRATION_ERROR'
+                'message' => 'Ошибка начала регистрации. Попробуйте позже.',
+                'error_code' => 'REGISTRATION_START_ERROR'
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete registration by verifying OTP and creating user.
+     */
+    public function completeRegistration(VerifyOtpRequest $request): JsonResponse
+    {
+        try {
+            $data = $request->validated();
+            $phone = $data['phone'];
+            $otp = $data['otp'];
+
+            // Verify OTP
+            if (!$this->authService->verifyOtp($phone, $otp)) {
+                return response()->json([
+                    'message' => 'Неверный код подтверждения',
+                    'error_code' => 'INVALID_OTP'
+                ], 401);
+            }
+
+            // Get registration data from cache
+            $registrationData = Cache::get("registration_data:{$phone}");
+            if (!$registrationData) {
+                return response()->json([
+                    'message' => 'Данные регистрации не найдены. Начните регистрацию заново.',
+                    'error_code' => 'REGISTRATION_DATA_NOT_FOUND'
+                ], 404);
+            }
+
+            // Create user
+            $user = User::create([
+                'name' => $registrationData['name'],
+                'phone' => $registrationData['phone'],
+                'telegram_id' => $registrationData['telegram_id'],
+                'phone_verified_at' => now(),
+                'last_login_at' => now()
+            ]);
+
+            // Create token
+            $token = $user->createToken('registration-token')->plainTextToken;
+
+            // Clear registration data and OTP from cache
+            Cache::forget("registration_data:{$phone}");
+            Cache::forget("auth_otp:{$phone}");
+
+            return response()->json([
+                'message' => 'Регистрация успешно завершена! Добро пожаловать!',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'phone' => $user->phone,
+                    'telegram_id' => $user->telegram_id,
+                ],
+                'token' => $token,
+                'token_type' => 'Bearer'
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Registration completion failed', [
+                'phone' => $request->input('phone'),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Ошибка завершения регистрации. Попробуйте позже.',
+                'error_code' => 'REGISTRATION_COMPLETION_ERROR'
             ], 500);
         }
     }

@@ -23,7 +23,7 @@ final class AuthService
     /**
      * Generate and send OTP via Telegram.
      */
-    public function generateAndSendOtp(string $phone): string
+    public function generateAndSendOtp(string $phone, ?int $telegramId = null): string
     {
         // Generate OTP
         $otp = $this->generateOtp();
@@ -36,7 +36,7 @@ final class AuthService
         );
 
         // Send via Telegram
-        $this->sendOtpViaTelegram($phone, $otp);
+        $this->sendOtpViaTelegram($phone, $otp, $telegramId);
 
         return $otp;
     }
@@ -112,7 +112,7 @@ final class AuthService
     /**
      * Send OTP via Telegram Bot API.
      */
-    private function sendOtpViaTelegram(string $phone, string $otp): void
+    private function sendOtpViaTelegram(string $phone, string $otp, ?int $telegramId = null): void
     {
         try {
             // Check if bot token is configured
@@ -123,35 +123,48 @@ final class AuthService
                 return;
             }
 
-            // Find user by phone to get telegram_id
-            $user = \App\Models\User::where('phone', $phone)->first();
+            // Get telegram_id from parameter or find user by phone
+            if (!$telegramId) {
+                $user = \App\Models\User::where('phone', $phone)->first();
+                $telegramId = $user?->telegram_id;
+            }
 
-            if (!$user || !$user->telegram_id) {
-                Log::warning('Cannot send OTP: user not found or no telegram_id', [
+            if (!$telegramId) {
+                Log::warning('Cannot send OTP: no telegram_id provided', [
                     'phone' => $phone
                 ]);
                 return;
             }
 
-            $message = "Ваш код подтверждения: {$otp}\n\nКод действителен 5 минут.";
+            $message = "🔐 <b>Код подтверждения</b>\n\n";
+            $message .= "Ваш код: <code>{$otp}</code>\n\n";
+            $message .= "⏰ Код действителен 5 минут.\n";
+            $message .= "🔒 Не передавайте код третьим лицам.";
 
-            $response = Http::post("https://api.telegram.org/bot{$this->telegramBotToken}/sendMessage", [
-                'chat_id' => $user->telegram_id,
+            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$this->telegramBotToken}/sendMessage", [
+                'chat_id' => $telegramId,
                 'text' => $message,
                 'parse_mode' => 'HTML'
             ]);
 
-            if (!$response->successful()) {
+            if ($response->successful()) {
+                Log::info('OTP sent successfully via Telegram', [
+                    'phone' => $phone,
+                    'telegram_id' => $telegramId
+                ]);
+            } else {
                 Log::error('Failed to send OTP via Telegram', [
                     'phone' => $phone,
-                    'telegram_id' => $user->telegram_id,
-                    'response' => $response->body()
+                    'telegram_id' => $telegramId,
+                    'response' => $response->body(),
+                    'status' => $response->status()
                 ]);
             }
 
         } catch (\Exception $e) {
             Log::error('Exception while sending OTP via Telegram', [
                 'phone' => $phone,
+                'telegram_id' => $telegramId,
                 'error' => $e->getMessage()
             ]);
         }
