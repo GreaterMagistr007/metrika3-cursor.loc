@@ -10,6 +10,7 @@
         :id="id"
         :value="modelValue"
         @input="$emit('update:modelValue', $event.target.value)"
+        @change="$emit('change', $event.target.value)"
         :disabled="disabled"
         :class="selectClass"
       >
@@ -77,7 +78,7 @@ const props = defineProps({
   }
 });
 
-defineEmits(['update:modelValue']);
+defineEmits(['update:modelValue', 'change']);
 
 const selectClass = computed(() => {
   const baseClass = 'w-full pl-3 pr-10 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none'

@@ -39,6 +39,36 @@ final class CreateMessageRequest extends FormRequest
     }
 
     /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $recipients = $this->input('recipients', []);
+            
+            foreach ($recipients as $index => $recipient) {
+                if ($recipient['type'] === 'user' && $recipient['id']) {
+                    if (!\App\Models\User::where('id', $recipient['id'])->exists()) {
+                        $validator->errors()->add(
+                            "recipients.{$index}.id",
+                            "Пользователь с ID {$recipient['id']} не найден"
+                        );
+                    }
+                }
+                
+                if ($recipient['type'] === 'cabinet' && $recipient['id']) {
+                    if (!\App\Models\Cabinet::where('id', $recipient['id'])->exists()) {
+                        $validator->errors()->add(
+                            "recipients.{$index}.id",
+                            "Кабинет с ID {$recipient['id']} не найден"
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    /**
      * Get custom messages for validator errors.
      */
     public function messages(): array

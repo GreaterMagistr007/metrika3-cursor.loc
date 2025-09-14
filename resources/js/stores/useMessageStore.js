@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import axios from '../api/axios';
 
 export const useMessageStore = defineStore('messages', {
     state: () => ({
@@ -16,6 +16,22 @@ export const useMessageStore = defineStore('messages', {
     },
 
     actions: {
+        /**
+         * Load messages from API
+         */
+        async loadMessages() {
+            this.loading = true;
+            try {
+                const response = await axios.get('/api/messages');
+                this.messages = response.data.data || [];
+                this.updateUnreadCount();
+            } catch (error) {
+                console.error('Failed to load messages:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
         /**
          * Add message to store
          */

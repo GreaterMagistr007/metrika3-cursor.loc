@@ -10,6 +10,7 @@ import Dashboard from './components/pages/Dashboard.vue';
 import Settings from './components/pages/Settings.vue';
 import Login from './components/pages/Login.vue';
 import Cabinets from './components/pages/Cabinets.vue';
+import Messages from './components/pages/Messages.vue';
 
 // Настройка роутера
 const routes = [
@@ -29,6 +30,12 @@ const routes = [
         path: '/cabinets', 
         name: 'cabinets', 
         component: Cabinets,
+        meta: { requiresAuth: true }
+    },
+    { 
+        path: '/messages', 
+        name: 'messages', 
+        component: Messages,
         meta: { requiresAuth: true }
     },
     { 

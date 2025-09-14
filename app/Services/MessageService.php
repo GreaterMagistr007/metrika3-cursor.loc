@@ -199,16 +199,22 @@ final class MessageService
             switch ($recipient->recipient_type) {
                 case 'user':
                     if ($recipient->recipient_id) {
-                        $userIds[] = $recipient->recipient_id;
+                        // Проверяем существование пользователя
+                        if (User::where('id', $recipient->recipient_id)->exists()) {
+                            $userIds[] = $recipient->recipient_id;
+                        }
                     }
                     break;
 
                 case 'cabinet':
                     if ($recipient->recipient_id) {
-                        $cabinetUserIds = User::whereHas('cabinets', function ($query) use ($recipient) {
-                            $query->where('cabinets.id', $recipient->recipient_id);
-                        })->pluck('id')->toArray();
-                        $userIds = array_merge($userIds, $cabinetUserIds);
+                        // Проверяем существование кабинета
+                        if (\App\Models\Cabinet::where('id', $recipient->recipient_id)->exists()) {
+                            $cabinetUserIds = User::whereHas('cabinets', function ($query) use ($recipient) {
+                                $query->where('cabinets.id', $recipient->recipient_id);
+                            })->pluck('id')->toArray();
+                            $userIds = array_merge($userIds, $cabinetUserIds);
+                        }
                     }
                     break;
 
@@ -222,13 +228,15 @@ final class MessageService
         // Remove duplicates
         $userIds = array_unique($userIds);
 
-        // Create user_messages records
+        // Create user_messages records only for existing users
         foreach ($userIds as $userId) {
-            UserMessage::create([
-                'user_id' => $userId,
-                'message_id' => $message->id,
-                'is_read' => false,
-            ]);
+            if (User::where('id', $userId)->exists()) {
+                UserMessage::create([
+                    'user_id' => $userId,
+                    'message_id' => $message->id,
+                    'is_read' => false,
+                ]);
+            }
         }
     }
 

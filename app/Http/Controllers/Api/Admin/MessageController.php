@@ -26,8 +26,22 @@ final class MessageController extends Controller
         $perPage = (int) $request->get('per_page', 15);
         $type = $request->get('type');
         $isActive = $request->get('is_active');
+        $search = $request->get('search');
 
         $query = Message::with(['recipients', 'userMessages']);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                  ->orWhere('text', 'LIKE', "%{$search}%")
+                  ->orWhere('title', 'LIKE', "%" . mb_strtolower($search) . "%")
+                  ->orWhere('text', 'LIKE', "%" . mb_strtolower($search) . "%")
+                  ->orWhere('title', 'LIKE', "%" . mb_strtoupper($search) . "%")
+                  ->orWhere('text', 'LIKE', "%" . mb_strtoupper($search) . "%")
+                  ->orWhere('title', 'LIKE', "%" . mb_convert_case($search, MB_CASE_TITLE) . "%")
+                  ->orWhere('text', 'LIKE', "%" . mb_convert_case($search, MB_CASE_TITLE) . "%");
+            });
+        }
 
         if ($type) {
             $query->where('type', $type);

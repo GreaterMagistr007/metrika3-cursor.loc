@@ -25,8 +25,8 @@ final class MessageController extends Controller
         $messages = $this->messageService->getAllMessagesForUser($request->user()->id, $perPage);
 
         return response()->json([
-            'messages' => $messages->items(),
-            'pagination' => [
+            'data' => $messages->items(),
+            'meta' => [
                 'current_page' => $messages->currentPage(),
                 'last_page' => $messages->lastPage(),
                 'per_page' => $messages->perPage(),
@@ -45,7 +45,7 @@ final class MessageController extends Controller
         $messages = $this->messageService->getUnreadMessagesForUser($request->user()->id);
 
         return response()->json([
-            'messages' => $messages,
+            'data' => $messages,
             'count' => $messages->count(),
         ]);
     }

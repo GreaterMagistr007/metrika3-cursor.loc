@@ -66,10 +66,21 @@
                       >
                         <div class="flex items-start space-x-3">
                           <div class="flex-shrink-0">
-                            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                            <div :class="[
+                              'w-2 h-2 rounded-full mt-2',
+                              getMessageTypeColor(message.type)
+                            ]"></div>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <p class="text-sm text-gray-900">{{ message.title || message.text }}</p>
+                            <div class="flex items-center space-x-2">
+                              <p class="text-sm text-gray-900">{{ message.title || message.text }}</p>
+                              <span :class="[
+                                'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                getMessageTypeBadgeColor(message.type)
+                              ]">
+                                {{ getMessageTypeLabel(message.type) }}
+                              </span>
+                            </div>
                             <p class="text-xs text-gray-500 mt-1">{{ formatTime(message.created_at) }}</p>
                           </div>
                         </div>
@@ -150,6 +161,24 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
             Кабинеты
+          </router-link>
+          
+          <router-link 
+            to="/messages" 
+            class="group flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            :class="[
+              $route.name === 'messages' 
+                ? 'bg-blue-100 text-blue-700' 
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            ]"
+          >
+            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            Сообщения
+            <span v-if="unreadCount > 0" class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">
+              {{ unreadCount }}
+            </span>
           </router-link>
           
           <router-link 
@@ -236,8 +265,7 @@ const markAsRead = async (messageId) => {
 
 const goToNotifications = () => {
   showNotifications.value = false;
-  // TODO: Navigate to notifications page when implemented
-  console.log('Navigate to notifications page');
+  router.push('/messages');
 };
 
 const formatTime = (dateString) => {
@@ -256,6 +284,42 @@ const formatTime = (dateString) => {
   } else {
     return date.toLocaleDateString('ru-RU');
   }
+};
+
+const getMessageTypeColor = (type) => {
+  const colors = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-500',
+    system: 'bg-purple-500'
+  };
+  
+  return colors[type] || 'bg-gray-500';
+};
+
+const getMessageTypeBadgeColor = (type) => {
+  const colors = {
+    success: 'bg-green-100 text-green-800',
+    error: 'bg-red-100 text-red-800',
+    warning: 'bg-yellow-100 text-yellow-800',
+    info: 'bg-blue-100 text-blue-800',
+    system: 'bg-purple-100 text-purple-800'
+  };
+  
+  return colors[type] || 'bg-gray-100 text-gray-800';
+};
+
+const getMessageTypeLabel = (type) => {
+  const labels = {
+    success: 'Успех',
+    error: 'Ошибка',
+    warning: 'Предупреждение',
+    info: 'Информация',
+    system: 'Система'
+  };
+  
+  return labels[type] || 'Сообщение';
 };
 
 // Watchers
@@ -290,6 +354,8 @@ onMounted(async () => {
   // Load user data if authenticated
   if (authStore.isAuthenticated) {
     await authStore.fetchUser();
+    // Load messages for authenticated users
+    await messageStore.loadMessages();
   }
   
   // Add click outside listener
