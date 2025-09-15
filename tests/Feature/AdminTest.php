@@ -144,7 +144,7 @@ final class AdminTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'users' => [
+                'data' => [
                     '*' => [
                         'id',
                         'phone',
@@ -152,7 +152,7 @@ final class AdminTest extends TestCase
                         'created_at',
                     ],
                 ],
-                'pagination' => [
+                'meta' => [
                     'current_page',
                     'total',
                 ],
@@ -339,11 +339,22 @@ final class AdminTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'users_count',
-                'cabinets_count',
-                'admin_users_count',
-                'audit_logs_count',
-                'messages_count',
+                'users' => [
+                    'total',
+                    'active',
+                ],
+                'cabinets' => [
+                    'total',
+                    'active',
+                ],
+                'messages' => [
+                    'total',
+                    'active',
+                ],
+                'audit_logs' => [
+                    'total',
+                    'today',
+                ],
             ]);
     }
 
@@ -371,8 +382,7 @@ final class AdminTest extends TestCase
 
         $response->assertStatus(401)
             ->assertJson([
-                'message' => 'Доступ запрещен. Требуется аутентификация администратора.',
-                'error_code' => 'ADMIN_AUTH_REQUIRED',
+                'message' => 'Unauthenticated.',
             ]);
     }
 

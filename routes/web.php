@@ -3,14 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-function getUserIp(): ?string
-{
-    $request = app(Request::class);
-
-    return $request->getClientIp();
-}
-
-if (getUserIp() === env('ADMIN_IP')) {
+if (app(Request::class)->getClientIp() === env('ADMIN_IP')) {
     // Админ-панель (должна быть ПЕРЕД основным приложением)
     Route::prefix('admin')->group(function () {
         Route::get('/', function () {

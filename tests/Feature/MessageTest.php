@@ -41,7 +41,7 @@ final class MessageTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'messages' => [
+                'data' => [
                     '*' => [
                         'id',
                         'type',
@@ -50,7 +50,7 @@ final class MessageTest extends TestCase
                         'created_at',
                     ]
                 ],
-                'pagination' => [
+                'meta' => [
                     'current_page',
                     'last_page',
                     'per_page',
@@ -75,12 +75,9 @@ final class MessageTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'messages',
-                'count'
+                'data',
             ])
-            ->assertJson([
-                'count' => 1
-            ]);
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_can_mark_message_as_read(): void

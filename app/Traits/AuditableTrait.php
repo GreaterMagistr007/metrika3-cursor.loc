@@ -19,8 +19,21 @@ trait AuditableTrait
         // Get user ID from either regular auth or admin auth
         $userId = Auth::id();
         
-        // For admin operations, set user_id to null to avoid foreign key issues
-        if (Auth::guard('admin')->check()) {
+        // If we have a regular user authenticated, use their ID
+        // Only use null for admin users (AdminUser model)
+        if (Auth::check() && Auth::guard('admin')->check()) {
+            // Both guards are active - check which one is a regular User
+            $regularUser = Auth::user();
+            $adminUser = Auth::guard('admin')->user();
+            
+            // If the regular user is a User model (not AdminUser), use their ID
+            if ($regularUser instanceof \App\Models\User) {
+                $userId = $regularUser->id;
+            } else {
+                $userId = null; // Admin operations don't reference users table
+            }
+        } elseif (Auth::guard('admin')->check()) {
+            // Only admin guard is active
             $userId = null; // Admin operations don't reference users table
         }
 

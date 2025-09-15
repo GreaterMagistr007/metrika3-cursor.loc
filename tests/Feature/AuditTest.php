@@ -10,6 +10,7 @@ use App\Models\CabinetUser;
 use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 final class AuditTest extends TestCase
@@ -48,8 +49,15 @@ final class AuditTest extends TestCase
     /** @test */
     public function user_can_log_audit_event(): void
     {
+        // Clear existing audit logs
+        AuditLog::truncate();
+        
         // Authenticate user for audit logging
         $this->actingAs($this->user);
+        
+        // Debug: Check if user is authenticated
+        $this->assertTrue(Auth::check());
+        $this->assertEquals($this->user->id, Auth::id());
         
         $this->user->logAuditEvent('test_event', 'Test event description');
 
@@ -64,6 +72,9 @@ final class AuditTest extends TestCase
     /** @test */
     public function user_can_log_audit_event_with_metadata(): void
     {
+        // Clear existing audit logs
+        AuditLog::truncate();
+        
         // Authenticate user for audit logging
         $this->actingAs($this->user);
         
@@ -253,6 +264,9 @@ final class AuditTest extends TestCase
     /** @test */
     public function audit_logs_are_created_with_correct_timestamps(): void
     {
+        // Clear existing audit logs
+        AuditLog::truncate();
+        
         // Authenticate user for audit logging
         $this->actingAs($this->user);
         
@@ -269,6 +283,9 @@ final class AuditTest extends TestCase
     /** @test */
     public function audit_logs_can_be_retrieved_by_user(): void
     {
+        // Clear existing audit logs
+        AuditLog::truncate();
+        
         // Authenticate user for audit logging
         $this->actingAs($this->user);
         
